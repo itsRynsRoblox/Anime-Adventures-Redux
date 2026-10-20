@@ -240,43 +240,44 @@ OpenDebugMenu(*) {
 
     ; Title
     DebugGUI.SetFont("s14 bold", "Segoe UI")
-    DebugGUI.Add("Text", "x20 y20 w460 cWhite +Center", "Debug / Test Menu")
+    DebugGUI.Add("Text", "x20 y10 w460 cWhite +Center", "Debug / Test Menu")
 
     ; Dropdown label
     DebugGUI.SetFont("s10 bold", "Segoe UI")
-    DebugGUI.Add("Text", "x20 y70 cWhite", "Select something to test:")
+    DebugGUI.Add("Text", "x20 y35 cWhite", "Select something to test:")
 
     ; Dropdown list of FindText / test options
     TestOptions := [
         "Check For Lobby",
         "Unit Successfully Placed",
+        "Test Game Over",
         "Test screen resolution / DPI",
         "Custom FindText (paste code below)"
     ]
 
-    DDL := DebugGUI.Add("DropDownList", "x20 y95 w460 cBlack", TestOptions)
+    DDL := DebugGUI.Add("DropDownList", "x20 y55 w460 cBlack", TestOptions)
     DDL.Choose(1)
 
     ; Optional multi-line box for custom FindText code
-    DebugGUI.Add("Text", "x20 y140 cWhite", "Custom FindText code (optional):")
-    CustomEdit := DebugGUI.Add("Edit", "x20 y160 w460 h80 Multi cBlack")
+   /* DebugGUI.Add("Text", "x20 y80 cWhite", "Custom FindText code (optional):")
+    CustomEdit := DebugGUI.Add("Edit", "x20 y100 w460 h80 Multi cBlack")*/
 
     ; Result / log area
-    DebugGUI.Add("Text", "x20 y255 cWhite", "Result / Log:")
-    ResultEdit := DebugGUI.Add("Edit", "x20 y275 w460 h120 Multi ReadOnly cBlack", "Ready...")
+    DebugGUI.Add("Text", "x20 y85 cWhite", "Result / Log:")
+    ResultEdit := DebugGUI.Add("Edit", "x20 y105 w460 h120 Multi ReadOnly cBlack", "Ready...")
 
     ; Buttons
     DebugGUI.SetFont("s10 bold", "Segoe UI")
-    BtnTest := DebugGUI.Add("Button", "x20 y410 w140 h35", "▶ Test Selected")
-    BtnClear := DebugGUI.Add("Button", "x180 y410 w140 h35", "Clear Log")
-    BtnClose := DebugGUI.Add("Button", "x340 y410 w140 h35", "Close")
+    BtnTest := DebugGUI.Add("Button", "x20 y240 w140 h35", "▶ Test Selected")
+    BtnClear := DebugGUI.Add("Button", "x180 y240 w140 h35", "Clear Log")
+    BtnClose := DebugGUI.Add("Button", "x340 y240 w140 h35", "Close")
 
     ; ========== Event handlers ==========
-    BtnTest.OnEvent("Click", (*) => RunDebugTest(DDL.Text, CustomEdit.Value, ResultEdit))
+    BtnTest.OnEvent("Click", (*) => RunDebugTest(DDL.Text, "", ResultEdit))
     BtnClear.OnEvent("Click", (*) => ResultEdit.Value := "")
     BtnClose.OnEvent("Click", (*) => DebugGUI.Destroy())
 
-    DebugGUI.Show("w500 h470")
+    DebugGUI.Show("w500 h300")
 }
 
 ; ========== Test runner ==========
@@ -290,29 +291,24 @@ RunDebugTest(selected, customCode, ResultEdit) {
         }
         switch selected {
             case "Check For Lobby":
-                ResultEdit.Value .= "→ Testing Lobby FindText...`n"
+                ResultEdit.Value .= "Checking for the lobby...`n"
                 result := CheckForLobby()
                 ResultEdit.Value .= result ? "Found!" : "Not found"
 
             case "Unit Successfully Placed":
-                ResultEdit.Value .= "→ Testing Unit Placement FindText...`n"
+                ResultEdit.Value .= "Checking for successful unit placement...`n"
                 result := UnitPlaced()
-                ResultEdit.Value .= result ? "Unit placement found!" : "Unit placement not found"    
+                ResultEdit.Value .= result ? "Unit placement found!" : "Unit placement not found"
+
+            case "Test Game Over":
+                ResultEdit.Value .= "Checking for game over...`n"
+                result := CheckForXP(false, false)
+                ResultEdit.Value .= result ? "Game over found!" : "Game over not found"
 
             case "Test screen resolution / DPI":
                 ResultEdit.Value .= "Screen: " A_ScreenWidth "x" A_ScreenHeight ""
-                ResultEdit.Value .= "DPI: " A_ScreenDPI
-
-            case "Custom FindText (paste code below)":
-                if (customCode = "") {
-                    ResultEdit.Value .= "No custom code entered."
-                    return
-                }
-                ResultEdit.Value .= "Executing custom code..."
-                ResultEdit.Value .= "Custom code executed (add your own logic)."
+                ResultEdit.Value .= "`nDPI: " A_ScreenDPI
         }
-
-        ResultEdit.Value .= "`n`nDone."
     } catch as err {
         ResultEdit.Value .= "ERROR: " err.Message
     }
@@ -363,12 +359,9 @@ global NextLevelBox := MainUI.Add("Checkbox", "x900 y451 cffffff", "Next Level")
 global ReturnLobbyBox := MainUI.Add("CheckBox", "x1005 y451 cffffff Checked", "Return To Lobby")
 
 global MatchMaking := MainUI.Add("Checkbox", "x900 y476 cffffff Checked", "Matchmaking")
-global AutoAbilityBox := MainUI.Add("CheckBox", "x1015 y476  cffffff Checked", "Auto Ability")
-global AutoAbilityText := MainUI.Add("Text", "x1125 y476 c" uiTheme[1], "Auto Ability Timer:")
-global AutoAbilityTimer := MainUI.Add("Edit", "x1255 y473 w60 h20 cBlack Number", "60")
 
 ;Contract Options
-global TeamSwap := MainUI.Add("CheckBox", "x900 y476 cffffff", "Team Swap")
+global TeamSwap := MainUI.Add("CheckBox", "x1015 y476 cffffff", "Allow Team Swaps")
 PhysicalTeamText := MainUI.Add("Text", "x1135 y451 w115 h20 +Center", "Physical Team")
 global PhysicalTeam := MainUI.Add("DropDownList", "x1170 y471 w45 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
 MagicTeamText := MainUI.Add("Text", "x1250 y451 w80 h20 +Center", "Magic Team")
@@ -412,7 +405,7 @@ WebhookEnabled.OnEvent("Click", (*) => ValidateWebhook())
 global WebhookLogsEnabled := MainUI.Add("CheckBox", "x825 y130 Hidden cffffff", "Send Console Logs")
 global WebhookURLBox := MainUI.Add("Edit", "x1000 y108 w260 h20 Hidden c" uiTheme[6], "")
 
-global PrivateSettingsBorder := MainUI.Add("GroupBox", "x808 y145 w550 h296 +Center Hidden c" uiTheme[1], "Reconnection Settings")
+global PrivateSettingsBorder := MainUI.Add("GroupBox", "x808 y145 w550 h236 +Center Hidden c" uiTheme[1], "Reconnection Settings")
 global PrivateServerEnabled := MainUI.Add("CheckBox", "x825 y165 Hidden cffffff", "Reconnect to Private Server")
 global PrivateServerURLBox := MainUI.Add("Edit", "x1050 y163 w160 h20 Hidden c" uiTheme[6], "")
 PrivateServerTestButton := MainUI.Add("Button", "x1225 y163 w50 h20 Hidden", "Test")
@@ -441,6 +434,7 @@ keybindSaveBtn.OnEvent("Click", SaveKeybindSettings)
 global UpgradeBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Upgrade Settings")
 global EnableUpgrading := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff Checked", "Enable Upgrading")
 global UnitManagerUpgradeSystem := MainUI.Add("CheckBox", "x825 y130 Hidden cffffff", "Use the Unit Manager to upgrade your units")
+UnitManagerUpgradeSystem.Enabled := false
 global PriorityUpgrade := MainUI.Add("CheckBox", "x825 y150 cffffff Hidden Checked", "Use Unit Priority while upgrading")
 
 global ZoomSettingsBorder := MainUI.Add("GroupBox", "x1000 y205 w165 h176 +Center Hidden c" uiTheme[1], "Zoom Tech Settings")
@@ -462,20 +456,6 @@ global NightmareDifficulty := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff",
 
 global PortalBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Portal Settings")
 global PortalLobby := MainUI.Add("CheckBox", "x825 y280 Hidden cffffff", "Starting portal from the lobby")
-
-; === Disbled At The Moment ===
-global SJWNuke := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff", "Use SJW Nuke")
-global SJWSlotText := MainUI.Add("Text", "x825 y130 Hidden cffffff", "SJW Slot")
-global SJWSlot := MainUI.Add("DropDownlist", "x905 y128 w45 Hidden Choose0 +Center", ["1", "2", "3", "4", "5", "6"])
-; === End of Disabled At The Moment ===
-
-global UnitBorder := MainUI.Add("GroupBox", "x808 y166 w550 h220 +Center Hidden" uiTheme[1], "Unit Manager Position Fixes")
-global MinionSlot1 := MainUI.Add("CheckBox", "x825 y186 cffffff Hidden", "Slot 1 adds extra unit")
-global MinionSlot2 := MainUI.Add("CheckBox", "x1005 y186 cffffff Hidden", "Slot 2 adds extra unit")
-global MinionSlot3 := MainUI.Add("CheckBox", "x1185 y186 cffffff Hidden", "Slot 3 adds extra unit")
-global MinionSlot4 := MainUI.Add("CheckBox", "x825 y212 cffffff Hidden", "Slot 4 adds extra unit")
-global MinionSlot5 := MainUI.Add("CheckBox", "x1005 y212 cffffff Hidden", "Slot 5 adds extra unit")
-global MinionSlot6 := MainUI.Add("CheckBox", "x1185 y212 cffffff Hidden", "Slot 6 adds extra unit")
 ; === End Unit Config GUI ===
 
 ; === Custom Recording GUI ===
@@ -544,7 +524,7 @@ DiscordButton.OnEvent("Click", (*) => OpenDiscord())
 ;--------------SETTINGS--------------;
 global modeSelectionGroup := MainUI.Add("GroupBox", "x808 y38 w500 h45 +Center Background" uiTheme[2], "Game Mode Selection")
 MainUI.SetFont("s10 c" uiTheme[6])
-global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Custom"])
+global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts", "Custom"])
 global EventDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center Hidden", ["Fool's Hunt"])
 global StoryDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Planet Greenie", "Walled City", "Snowy Town", "Sand Village", "Navy Bay", "Fiend City", "Spirit World", "Ant Kingdom", "Magic Town", "Haunted Academy", "Magic Hills", "Space Center", "Alien Spaceship", "Fabled Kingdom", "Ruined City", "Puppet Island", "Virtual Dungeon", "Snowy Kingdom", "Dungeon Throne", "Mountain Temple", "Rain Village", "Shibuya District"])
 global StoryActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Infinity"])
@@ -556,7 +536,7 @@ global InfinityCastleDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 C
 global PortalDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Alien Portal", "Puppet Portal", "Demon Leader's Portal", "Eclipse Portal", "Noble Portal", "Shibuya Portal"])
 global PortalRoleDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Creating", "Joining", "Solo"])
 global ContractPageDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Page 1", "Page 2","Page 3","Page 4","Page 5","Page 6", "Page 4-5"])
-global ContractJoinDropdown := MainUI.Add("DropDownList", "x1057 y53 w120 h180 Choose0 +Center", ["Creating", "Joining","Matchmaking", "Solo"])
+global ContractJoinDropdown := MainUI.Add("DropDownList", "x1057 y53 w120 h180 Choose0 +Center", ["Hosting", "Joining", "Solo"])
 global ConfirmButton := MainUI.Add("Button", "x1218 y53 w80 h25", "Confirm")
 
 
@@ -620,7 +600,7 @@ AddUnitCard(MainUI, index, x, y) {
     }
 
     if (!AutoAbilityDisabled) {
-        unit.AutoAbilityText := AddText(x + 275, y + 5, 250, 20, "BackgroundTrans", "Enable Auto Ability")
+        unit.AutoAbilityText := AddText(x + 275, y + 17, 250, 20, "BackgroundTrans", "Enable Auto Ability")
     }
 
     if (!unitUpgradeLimitDisabled) {
@@ -915,13 +895,18 @@ ClearToolTip() {
 }
 
 InitControlGroups() {
-    global ControlGroups
+    global ControlGroups, autoUpgradeDisabled
 
     ControlGroups["Unit"] := []
 
     Blacklist := [""]
 
-    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled", "upgradeLimit", "abilityEnabled"] {
+    ; Add upgradeEnabled to the blacklist if auto-upgrade is disabled
+    if (autoUpgradeDisabled)
+        Blacklist.Push("upgradeEnabled")
+
+    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled",
+        "upgradeLimit", "abilityEnabled"] {
         loop 6 {
             varName := name . A_Index
             baseName := RegExReplace(varName, "\d+$")
@@ -947,7 +932,8 @@ InitControlGroups() {
 
     ControlGroups["Settings"] := [
         WebhookBorder, WebhookEnabled, WebhookLogsEnabled, WebhookURLBox,
-        PrivateSettingsBorder, PrivateServerEnabled, PrivateServerURLBox, PrivateServerTestButton, PrivateServerGuideButton,
+        PrivateSettingsBorder, PrivateServerEnabled, PrivateServerURLBox, PrivateServerTestButton,
+        PrivateServerGuideButton,
         TeleportFailsafe, TeleportFailsafeTimerText, TeleportFailsafeTimer,
         KeybindBorder, F1Text, F1Box, F2Text, F2Box, F3Text, F3Box, F4Text, F4Box, keybindSaveBtn,
         ZoomSettingsBorder, ZoomText, ZoomBox, ZoomTech, ZoomInOption, ZoomTeleport,
@@ -955,9 +941,7 @@ InitControlGroups() {
     ]
 
     ControlGroups["Upgrade"] := [
-        UpgradeBorder, EnableUpgrading, UnitManagerUpgradeSystem, PriorityUpgrade,
-        UnitBorder, MinionSlot1, MinionSlot2, MinionSlot3, MinionSlot4, MinionSlot5, MinionSlot6
-
+        UpgradeBorder, EnableUpgrading, UnitManagerUpgradeSystem, PriorityUpgrade
     ]
 
     ControlGroups["Mode"] := [
@@ -1031,6 +1015,8 @@ ToggleControlGroup(groupName) {
 }
 
 SetUnitCardVisibility(visible) {
+    global autoUpgradeDisabled
+
     for _, unit in UnitData {
         for _, ctrl in unit.OwnProps() {
             if IsObject(ctrl)
@@ -1038,9 +1024,31 @@ SetUnitCardVisibility(visible) {
         }
     }
 
+    Blacklist := [""]
+
+    ; Respect the same rule as InitControlGroups
+    if (autoUpgradeDisabled)
+        Blacklist.Push("upgradeEnabled")
+
     for name in ["Placement", "Enabled", "UpgradeEnabled", "Priority", "UpgradePriority", "AbilityEnabled"] {
         loop 6 {
-            ctrl := %name%%A_Index%
+            varName := name . A_Index
+            baseName := RegExReplace(varName, "\d+$")
+            baseName := StrLower(baseName)   ; normalize so it matches the blacklist
+
+            ; Check blacklist
+            isBlacklisted := false
+            for _, item in Blacklist {
+                if (StrLower(item) = baseName) {
+                    isBlacklisted := true
+                    break
+                }
+            }
+
+            if (isBlacklisted)
+                continue
+
+            ctrl := %varName%
             if IsObject(ctrl)
                 ctrl.Visible := visible
         }

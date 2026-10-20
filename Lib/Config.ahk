@@ -42,10 +42,6 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
                 Slot_3_Upgrade_Limit_Enabled: UpgradeLimitEnabled3.Value, Slot_4_Upgrade_Limit_Enabled: UpgradeLimitEnabled4.Value,
                 Slot_5_Upgrade_Limit_Enabled: UpgradeLimitEnabled5.Value, Slot_6_Upgrade_Limit_Enabled: UpgradeLimitEnabled6.Value
             },
-            Auto_Ability: {
-                Enabled: AutoAbilityBox.Value,
-                Timer: AutoAbilityTimer.Text
-            },
             Zoom_Settings: {
                 Level: ZoomBox.Value,
                 Enabled: ZoomTech.Value,
@@ -62,14 +58,6 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
                 Setup: ShouldUseSetup.Value,
                 Loop: ShouldLoopRecording.Value,
                 HandleEnd: ShouldHandleGameEnd.Value
-            },
-            Unit_Manager_Fixes: {
-                Slot1AddsExtraUnit: MinionSlot1.Value,
-                Slot2AddsExtraUnit: MinionSlot2.Value,
-                Slot3AddsExtraUnit: MinionSlot3.Value,
-                Slot4AddsExtraUnit: MinionSlot4.Value,
-                Slot5AddsExtraUnit: MinionSlot5.Value,
-                Slot6AddsExtraUnit: MinionSlot6.Value
             },
             Modes: {
                 Portals: {
@@ -222,13 +210,10 @@ LoadUnitSettingsByMode(fromFile := false) {
     UpgradeLimitEnabled5.Value := GetValue(data, ["Unit_Settings", "Slot_5_Upgrade_Limit_Enabled"], 0)
     UpgradeLimitEnabled6.Value := GetValue(data, ["Unit_Settings", "Slot_6_Upgrade_Limit_Enabled"], 0)
 
-    AutoAbilityBox.Value := GetValue(data, ["Auto_Ability", "Enabled"], 0)
-    AutoAbilityTimer.Text := GetValue(data, ["Auto_Ability", "Timer"], "")
-
     ZoomBox.Value := GetValue(data, ["Zoom_Settings", "Level"], 20)
     ZoomTech.Value := GetValue(data, ["Zoom_Settings", "Enabled"], 1)
     ZoomInOption.Value := GetValue(data, ["Zoom_Settings", "Zoom_In"], 1)
-    ZoomTeleport.Value := GetValue(data, ["Zoom_Settings", "Teleport"], 0)
+    ZoomTeleport.Value := GetValue(data, ["Zoom_Settings", "Teleport"], 1)
 
     EnableUpgrading.Value := GetValue(data, ["Upgrading", "Enabled"], 0)
     UnitManagerUpgradeSystem.Value := GetValue(data, ["Upgrading", "Use_Unit_Manager"], 0)
@@ -238,13 +223,6 @@ LoadUnitSettingsByMode(fromFile := false) {
     ShouldUseSetup.Value := GetValue(data, ["Custom_Recordings", "Setup"], 0)
     ShouldLoopRecording.Value := GetValue(data, ["Custom_Recordings", "Loop"], 0)
     ShouldHandleGameEnd.Value := GetValue(data, ["Custom_Recordings", "HandleEnd"], 0)
-
-    MinionSlot1.Value := GetValue(data, ["Unit_Manager_Fixes", "Slot1AddsExtraUnit"], 0)
-    MinionSlot2.Value := GetValue(data, ["Unit_Manager_Fixes", "Slot2AddsExtraUnit"], 0)
-    MinionSlot3.Value := GetValue(data, ["Unit_Manager_Fixes", "Slot3AddsExtraUnit"], 0)
-    MinionSlot4.Value := GetValue(data, ["Unit_Manager_Fixes", "Slot4AddsExtraUnit"], 0)
-    MinionSlot5.Value := GetValue(data, ["Unit_Manager_Fixes", "Slot5AddsExtraUnit"], 0)
-    MinionSlot6.Value := GetValue(data, ["Unit_Manager_Fixes", "Slot6AddsExtraUnit"], 0)
 
     HalloweenRestart.Value := GetValue(data, ["Modes", "Events", "Halloween", "Restart"], 0)
     HalloweenRestartTimer.Value := GetValue(data, ["Modes", "Events", "Halloween", "Wave"], 58)
@@ -280,6 +258,7 @@ LoadUniversalSettings() {
 
     NextLevelBox.Value := GetValue(data, ["Universal", "NextLevel"], 0)
     ReturnLobbyBox.Value := GetValue(data, ["Universal", "ReturnToLobby"], 0)
+    MatchMaking.Value := GetValue(data, ["Universal", "MatchMaking"], 1)
     ModeConfigurations.Value := GetValue(data, ["Universal", "UsingModeConfigurations"], 0)
 
     WebhookEnabled.Value := GetValue(data, ["Webhook", "Enabled"], 0)
@@ -299,6 +278,7 @@ SaveUniversalSettings() {
         Universal: {
             NextLevel: NextLevelBox.Value,
             ReturnToLobby: ReturnLobbyBox.Value,
+            Matchmaking: MatchMaking.Value,
             UsingModeConfigurations: ModeConfigurations.Value,
         },
         Webhook: {

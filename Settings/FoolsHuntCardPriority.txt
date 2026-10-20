@@ -1,5 +1,7 @@
 [CardPriority]
 Shield=1
-Yen=2
+Regen=2
 Speed=3
-Regen=4
+Yen=4
+Cooldown=5
+Damage=6

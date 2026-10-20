@@ -3,8 +3,17 @@
 global contractPageCounter := 0
 global contractSwitchPattern := 0
 
+StartContracts() {
+    AddToLog("Starting Contracts")
+    FixClick(33, 400)
+    Sleep(2500)
+    HandleContractJoin()
+    Sleep(2500)
+    RestartStage()
+}
+
 HandleContractJoin() {
-    loop { ; Optimised retry loop (was: return HandleContractJoin())
+    loop {
         selectedPage := ContractPageDropdown.Text
         joinType := ContractJoinDropdown.Text
 
@@ -47,8 +56,8 @@ HandleContractJoin() {
         pageCoords := clickCoords[pageNum]
 
         ; Handle different join types
-        if (joinType = "Creating") {
-            AddToLog("Creating contract portal on page " pageNum)
+        if (joinType = "Hosting") {
+            AddToLog("Hosting contract portal on page " pageNum)
             FixClick(pageCoords.openHere.x, pageCoords.openHere.y)
             Sleep(300)
             FixClick(255, 355)
@@ -61,48 +70,145 @@ HandleContractJoin() {
             Sleep(5000)
             SendInput("{e up}")
         } else if (joinType = "Solo") {
-            AddToLog("Attempting to start solo")
-            FixClick(pageCoords.openHere.x, pageCoords.openHere.y)
-            Sleep(300)
-            FixClick(255, 355)
-            Sleep 300
-            FixClick(400, 468) ; Start Contract
-        } else if (joinType = "Matchmaking") {
-            AddToLog("Joining matchmaking for contract on page " pageNum)
-            FixClick(pageCoords.matchmaking.x, pageCoords.matchmaking.y)  ; Click matchmaking button
-            Sleep(300)
+            if (MatchMaking.Value) {
+                AddToLog("Joining matchmaking for contract on page " pageNum)
+                FixClick(pageCoords.matchmaking.x, pageCoords.matchmaking.y)  ; Click matchmaking button
+                Sleep(300)
 
-            ; Try captcha
-            if (!CaptchaDetect(252, 292, 300, 50, 400, 335)) {
-                AddToLog("Captcha not detected, retrying...")
-                FixClick(585, 190)  ; Click close
-                return
-            }
-            FixClick(300, 385)  ; Enter captcha
-
-            startTime := A_TickCount
-            while (A_TickCount - startTime < 20000) {  ; Check for 20 seconds
-                if !(ok := FT(&X, &Y, 746, 514, 789, 530, 0, 0, AreaText)) {
-                    AddToLog("Area text gone - matchmaking successful")
-                    return true
+                ; Try captcha
+                if (!CaptchaDetect(252, 292, 300, 50, 400, 335)) {
+                    AddToLog("Captcha not detected, retrying...")
+                    FixClick(585, 190)  ; Click close
+                    return
                 }
-                Sleep(200)  ; Check every 200ms
-            }
+                FixClick(300, 385)  ; Enter captcha
 
-            AddToLog("Matchmaking failed - still on area screen after 20s, retrying...")
-            FixClick(445, 220)
-            Sleep(1000)
-            loop 5 {
-                SendInput("{WheelUp}")
-                Sleep(150)
+                startTime := A_TickCount
+                while (A_TickCount - startTime < 20000) {  ; Check for 20 seconds
+                    if !(ok := FT(&X, &Y, 746, 514, 789, 530, 0, 0, AreaText)) {
+                        AddToLog("Area text gone - matchmaking successful")
+                        return true
+                    }
+                    Sleep(200)  ; Check every 200ms
+                }
+
+                AddToLog("Matchmaking failed - still on area screen after 20s, retrying...")
+                FixClick(445, 220)
+                Sleep(1000)
+                loop 5 {
+                    SendInput("{WheelUp}")
+                    Sleep(150)
+                }
+                Sleep(1000)
+                continue ; retry (was: return HandleContractJoin())
+            } else {
+                FixClick(pageCoords.openHere.x, pageCoords.openHere.y)
+                Sleep(300)
+                FixClick(255, 355)
+                Sleep(300)
+                FixClick(400, 468) ; Start Contract
             }
-            Sleep(1000)
-            continue ; retry (was: return HandleContractJoin())
         }
-
-        AddToLog("Joining Contract Mode")
         return true
     }
+}
+
+HandleContractEnd() {
+    global inChallengeMode, challengeStartTime
+
+    loop {
+        Sleep(3000)
+
+        ; Click to claim any drops/rewards
+        FixClick(560, 560)
+
+        if (ok := FT(&X, &Y, 300, 190, 360, 250, 0, 0, UnitExit)) {
+            ClickUntilGone(0, 0, 300, 190, 360, 250, UnitExit, -4, -35)
+        }
+
+        if (ok := FT(&X, &Y, 260, 400, 390, 450, 0, 0, NextText)) {
+            ClickUntilGone(0, 0, 260, 400, 390, 450, NextText, 0, -40)
+        }
+
+        ; Check for both lobby texts
+        if (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText) or (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText2
+        ))) {
+            AddToLog("Found Lobby Text - proceeding with contract end options")
+            Sleep(2000)  ; Wait for UI to settle
+
+            if (inChallengeMode) {
+                AddToLog("Challenge completed - returning to selected mode")
+                inChallengeMode := false
+                challengeStartTime := A_TickCount
+                Sleep(1500)
+                ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, 0, -35, LobbyText2)
+                return CheckLobby()
+            }
+
+          /*  ; Check if it's time for challenge mode
+            if (!inChallengeMode && ChallengeBox.Value) {
+                timeElapsed := A_TickCount - challengeStartTime
+                if (timeElapsed >= 1800000) {  ; 30 minutes in milliseconds
+                    AddToLog("30 minutes passed - switching to Challenge mode")
+                    inChallengeMode := true
+                    challengeStartTime := A_TickCount
+                    Sleep(1500)
+                    ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, 0, -35, LobbyText2)
+                    return NextStep(CheckLobby)
+                }
+            } */
+            if (ReturnLobbyBox.Value) {
+                AddToLog("Contract complete - returning to lobby")
+                Sleep(1500)
+                ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, 0, -35, LobbyText2)
+                CheckLobby()
+                return StartSelectedMode()
+            } else {
+                AddToLog("Starting next contract")
+                Sleep(1500)
+                ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, +120, -35, LobbyText2)
+                return HandleNextContract()
+            }
+        }
+        Reconnect()
+    }
+}
+
+HandleNextContract() {
+    selectedPage := ContractPageDropdown.Text
+    if (selectedPage = "Page 4-5") {
+        selectedPage := GetContractPage()
+    }
+
+    pageNum := Integer(RegExReplace(selectedPage, "Page ", ""))
+
+    ; Define click coordinates to vote
+    clickCoords := Map(
+        1, { x: 205, y: 470 },
+        2, { x: 365, y: 470 },
+        3, { x: 525, y: 470 },
+        4, { x: 272, y: 470 },
+        5, { x: 432, y: 470 },
+        6, { x: 592, y: 470 }
+    )
+
+    ; First scroll if needed for pages 4-6
+    if (pageNum >= 4) {
+        FixClick(400, 300)
+        Sleep(200)
+        loop 5 {
+            SendInput("{WheelDown}")
+            Sleep(150)
+        }
+        Sleep(300)
+    }
+
+    ; Click the Open Here button for the selected page
+    AddToLog("Opening contract on page " selectedPage)
+    FixClick(clickCoords[pageNum].x, clickCoords[pageNum].y)
+    Sleep(500)
+
+    return RestartStage()
 }
 
 GetContractPage() {

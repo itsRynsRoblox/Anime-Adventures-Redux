@@ -76,7 +76,7 @@ ProcessAbility(coord) {
 }
 
 GetAutoAbilityTimer() {
-    seconds := AutoAbilityTimer.Value
+    seconds := 60
     return Round(seconds * 1000)
 }
 
@@ -94,29 +94,18 @@ HandleAutoAbility() {
 
     wiggle()
 
-    pixelChecks := [
-        {color: 0xC82521, x: 326, y: 284},
-        {color: 0xC82521, x: 326, y: 265},
-        {color: 0xC82521, x: 326, y: 303}
-    ]
-
     foundAbility := false
 
-    for pixel in pixelChecks {
-        if GetPixel(pixel.color, pixel.x, pixel.y, 2, 2, 20) {
-            FixClick(pixel.x, pixel.y)
-            Sleep(500)
-            foundAbility := true
-        }
+    if (ok := FT(&X, &Y, 342, 253, 401, 281, 0, 0, AutoOff)) {
+        FixClick(373, 237)  ; Turn ability on
+        AddToLog("Auto Ability Enabled")
+        foundAbility := true
     }
 
     return foundAbility
 }
 
 HandleAutoAbilityUnitManager() {
-    if !AutoAbilityBox.Value
-        return
-
     wiggle()
 
     ; Grid configuration

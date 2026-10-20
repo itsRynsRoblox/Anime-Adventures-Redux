@@ -128,9 +128,6 @@ UpgradeAllUnits() {
 
 HandleUnitManager(msg) {
     AddToLog(msg)
-    if (AutoAbilityBox.Value) {
-        SetTimer(CheckAutoAbility, GetAutoAbilityTimer())
-    }
     CloseMenu("Unit Manager")
     return MonitorStage()
 }
@@ -147,7 +144,7 @@ UnitManagerUpgrade(slot) {
         Sleep(500)
     }
     Loop 3 {
-        SendInput("T")
+        SendInput("R")
     }
 }
 
@@ -159,7 +156,7 @@ UnitManagerUpgradeWithLimit(coord, index, upgradeLimit) {
     if (WaitForUpgradeLimitText(upgradeLimit + 1, 750)) {
         HandleMaxUpgrade(coord, index)
     } else {
-        SendInput("T")
+        SendInput("R")
     }
 }  
 
@@ -188,7 +185,7 @@ ProcessUpgrades(slot := false, priorityNum := false) {
                 }
 
                 if (!UnitManagerUpgradeSystem.Value) {
-                    SendInput("X")
+                    SendInput("R")
                 }
 
                 PostUpgradeChecks(coord)
@@ -276,7 +273,7 @@ UpgradeUnitLimit(coord, index, upgradeLimit) {
     if (WaitForUpgradeLimitText(upgradeLimit + 1, 750)) {
         HandleMaxUpgrade(coord, index)
     } else {
-        SendInput("T")
+        SendInput("R")
     }
 }
 
@@ -296,12 +293,12 @@ HandleMaxUpgrade(coord, index) {
     AddToLog("Max upgrade reached for Unit: " coord.slot)
     maxedCoordinates.Push(coord)
     successfulCoordinates.RemoveAt(index)
-    SendInput("X")
+    SendInput("R")
 }
 
 PostUpgradeChecks(coord) {
 
-    if (isMenuOpen("End Screen")) {
+    if (CheckForXP()) {
         return HandleStageEnd()
     }
     
@@ -313,7 +310,7 @@ PostUpgradeChecks(coord) {
         CheckForCardSelection()
     }
 
-    if (isMenuOpen("End Screen")) {
+    if (CheckForXP()) {
         return HandleStageEnd()
     }
 
@@ -467,7 +464,7 @@ CheckForElyssiaSummon() {
 UpgradeUnit(x, y) {
     FixClick(x, y)
     Loop 3 {
-        SendInput("{T}")
+        SendInput("{R}")
         Sleep(50)
     }
 }

@@ -141,17 +141,6 @@ StartPlacingUnits(untilSuccessful := true) {
                     if (placedCounts[slotNum] < placements) {
                         if PlaceUnit(point.x, point.y, slotNum) {
                             placementIndex := successfulCoordinates.Length + 1
-                            if (HasMinionInSlot(slotNum)) {
-                                successfulCoordinates.Push({
-                                    x: point.x,
-                                    y: point.y,
-                                    slot: slotNum,
-                                    upgradePriority: GetUpgradePriority(slotNum),
-                                    placementIndex: placementIndex,
-                                    autoUpgrade: upgradeEnabled,
-                                    hasAbility: abilityEnabled
-                                })
-                            }
                             successfulCoordinates.Push({
                                 x: point.x,
                                 y: point.y,
@@ -172,7 +161,7 @@ StartPlacingUnits(untilSuccessful := true) {
                                     successfulCoordinates[successfulCoordinates.Length].hasAbility := false
                                 }
                             }
-                            SendInput("X")
+                            SendInput("Q")
                         } else {
                             PostPlacementChecks()
                         }
@@ -183,18 +172,6 @@ StartPlacingUnits(untilSuccessful := true) {
                     while (placedCounts[slotNum] < placements) {
                         if PlaceUnit(point.x, point.y, slotNum) {
                             placementIndex := successfulCoordinates.Length + 1
-
-                            if (HasMinionInSlot(slotNum)) {
-                                successfulCoordinates.Push({
-                                    x: point.x,
-                                    y: point.y,
-                                    slot: slotNum,
-                                    upgradePriority: GetUpgradePriority(slotNum),
-                                    placementIndex: placementIndex,
-                                    autoUpgrade: upgradeEnabled,
-                                    hasAbility: abilityEnabled
-                                })
-                            }
                             successfulCoordinates.Push({
                                 x: point.x,
                                 y: point.y,
@@ -216,7 +193,7 @@ StartPlacingUnits(untilSuccessful := true) {
                                     successfulCoordinates[successfulCoordinates.Length].hasAbility := false
                                 }
                             }
-                            SendInput("X")
+                            SendInput("Q")
                             break ; Move to the next placement spot
                         }
                         PostPlacementChecks()
@@ -240,28 +217,24 @@ StartPlacingUnits(untilSuccessful := true) {
 }
 
 PlaceUnit(x, y, slot := 1) {
-    ; Select the unit slot
-    SendInput(slot)
-    Sleep 300  ; Slightly reduced for responsiveness
-
-    ; First click to prepare placement
-    FixClick(x, y)
-    Sleep 75
-
-    SendInput("q")
-    Sleep 500
-
-    wiggle()
-
-    ; Second click to confirm the placement location
-    FixClick(x, y)
-    Sleep 75
-
-    ; Check if the unit was successfully placed
-    if (UnitPlaced()) {
-        return true
+    if (ModeDropdown.Text = "Winter Event") {
+        CheckForCardSelection()
+    }
+    if (ModeDropdown.Text = "Fool's Hunt") {
+        CheckForCardSelection()
     }
 
+    Sleep 50
+    SendInput(slot)
+    Sleep 50
+    FixClick(x, y)
+    Sleep 50
+    SendInput("q")
+
+    if UnitPlaced() {
+        Sleep 15
+        return true
+    }
     return false
 }
 
@@ -309,13 +282,9 @@ ResetPlacementTracking() {
 
 EnableAutoUpgrade(slotNum) {
     global successfulCoordinates
-    hasMinion := HasMinionInSlot(slotNum)
     slotNum := successfulCoordinates[successfulCoordinates.Length].placementIndex
     OpenMenu("Unit Manager")
     Sleep(150)
     SetAutoUpgradeForSingleUnit(slotNum)
-    if (hasMinion) {
-        SetAutoUpgradeForSingleUnit(slotNum + 1)
-    }
     CloseMenu("Unit Manager")
 }

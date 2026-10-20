@@ -42,13 +42,14 @@ OnModeChange(*) {
 
     ; Show based on selection
     switch ModeDropdown.Text {
-        case "Contract":
+        case "Contracts":
             ContractJoinDropdown.Visible := true
             ContractPageDropdown.Visible := true
             PhysicalTeamText.Visible := true
             PhysicalTeam.Visible := true
             MagicTeamText.Visible := true
             MagicTeam.Visible := true
+            TeamSwap.Visible := true
         case "Event":
             EventDropdown.Visible := true
         case "Story":
@@ -80,15 +81,19 @@ OnStoryChange(*) {
 
 OnEventChange(*) {
     if (EventDropdown.Text != "") {
+        ContractJoinDropdown.Visible := true
+        ContractPageDropdown.Visible := true
         PhysicalTeamText.Visible := true
         PhysicalTeam.Visible := true
         MagicTeamText.Visible := true
         MagicTeam.Visible := true
+        TeamSwap.Visible := true
     } else {
         PhysicalTeamText.Visible := false
         PhysicalTeam.Visible := false
         MagicTeamText.Visible := false
         MagicTeam.Visible := false
+        TeamSwap.Visible := false
     }
 }
 
@@ -532,22 +537,6 @@ RemoveWaiting() {
     waitingState := ""
 }
 
-HasMinionInSlot(slot) {
-    if (slot = 1)
-        return !!MinionSlot1.Value
-    else if (slot = 2)
-        return !!MinionSlot2.Value
-    else if (slot = 3)
-        return !!MinionSlot3.Value
-    else if (slot = 4)
-        return !!MinionSlot4.Value
-    else if (slot = 5)
-        return !!MinionSlot5.Value
-    else if (slot = 6)
-        return !!MinionSlot6.Value
-    return false
-}
-
 CheckUnitAbilities() {
     global successfulCoordinates, maxedCoordinates
 
@@ -758,4 +747,88 @@ CaptchaDetect(x, y, w, h, inputX, inputY) {
     }
     AddToLog("Could not detect valid captcha")
     return false
+}
+
+DetectMapImageSearch() { ;Imagesearch version
+    AddToLog("Trying to determine map using Image Search")
+    startTime := A_TickCount
+
+    loop {
+        ; Check if we waited more than 5 minute for votestart
+        if (A_TickCount - startTime > 300000) {
+            if (ok := FT(&X, &Y, 746, 514, 789, 530, 0, 0, AreaText)) {
+                AddToLog("Found in lobby - restarting selected mode")
+                return StartSelectedMode()
+            }
+            AddToLog("Could not detect map after 5 minutes - proceeding without movement")
+            return "no map found"
+        }
+
+        ; Check for vote screen
+        if (ok := FT(&X, &Y, 326, 60, 547, 173, 0, 0, VoteStart) or (ok := FT(&X, &Y, 340, 537, 468, 557, 0, 0, Yen))) {
+            AddToLog("No Map Found or Movement Unnecessary")
+            return "no map found"
+        }
+
+        loadingScreens := Map(
+            ; Story Maps
+            "Planet Greenie", [PlanetGreenieLoadingScreen],
+            "Walled City", [WalledCityLoadingScreen],
+            "Snowy Town", [SnowyTownLoadingScreen],  ; Example of multiple images
+            "Sand Village", [SandVillageLoadingScreen],
+            "Navy Bay", [NavyBayLoadingScreen],
+            "Fiend City", [FiendCityLoadingScreen],
+            "Spirit World", [SpiritWorldLoadingScreen],
+            "Ant Kingdom", [AntKingdomLoadingScreen, AntKingdomLoadingScreen2, AntKingdomLoadingScreen3],
+            "Magic Town", [MagicTownLoadingScreen],
+            "Magic Hills", [MagicHillsLoadingScreen, MagicHillsLegendLoadingScreen, MagicHillsLegendLoadingScreenAct3,
+                AntKingdomRaidLoadingScreen],
+            "Haunted Academy", [HauntedAcademyLoadingScreen],
+            "Alien Spaceship", [AlienSpaceshipLoadingScreen],
+            "Space Center", [SpaceCenterLoadingScreen],
+            "Fabled Kingdom", [FabledKingdomLoadingScreen, FabledKingdomLoadingScreen2, FabledKingdomLoadingScreen3,
+                FabledKingdomLoadingScreen4],
+            "Ruined City", [RuinedCityLoadingScreen],
+            "Puppet Island", [PuppetIslandLoadingScreen],
+            "Virtual Dungeon", [VirtualDungeonLoadingScreen],
+            "Snowy Kingdom", [SnowyKingdomLoadingScreen],
+            "Dungeon Throne", [DungeonThroneLoadingScreen],
+            "Mountain Temple", [MountainTempleLoadingScreen],
+            "Rain Village", [RainVillageLoadingScreen],
+            "Shibuya District", [ShibuyaDistrictLoadingScreen],
+            ; Legend Stages
+            "Spirit Town", [SpiritTownLoadingScreen],
+            ; Raids
+            "Sacred Planet", [SacredPlanetLoadingScreen],
+            "Strange Town", [StrangeTownLoadingScreen],
+            "Cursed Festival", [CursedFestivalLoadingScreen],
+            "Storm Hideout", [StormHideoutLoadingScreen],
+            "Nightmare Train", [NightmareTrainLoadingScreen],
+            "Future City", [FutureCityLoadingScreen],
+            ; Event Maps
+            "Assassin Park", [AssassinParkLoadingScreen],
+            "Haunted Mansion", [HauntedMansionLoadingScreen],
+            ; Unfinished Maps
+            "Air Craft", [AirCraftLoadingScreen],
+            "Hellish City", [HellishCityLoadingScreen]
+        )
+
+        for mapName, patterns in loadingScreens {
+            try {
+                for pattern in patterns {  ; Iterate through multiple images for each map
+                    if (ok := ImageSearch(&X, &Y, 0, 0, A_ScreenWidth, A_ScreenHeight, "*15 " pattern)) {
+                        AddToLog("Detected Map: " mapName)
+                        return mapName
+                    }
+                }
+            } catch {
+                if (debugMessages) {
+                    AddToLog("Error occurred during map detection.")
+                }
+            }
+        }
+
+        Sleep 1000
+        Reconnect()
+    }
 }

@@ -88,10 +88,6 @@ SelectCards(eventName) {
         cachedCardPriorities[eventName] := priorities
     }
 
-    if (AutoAbilityBox.Value) {
-        SetTimer(CheckAutoAbility, 0) ; Pause auto ability checks
-    }
-
     ; === Proper coords from old system ===
     if (ok := FT(&X, &Y, 200, 239, 276, 270, 0, 0, UnitExistence)) {
         FixClick(329, 184) ; close upg menu
@@ -180,19 +176,11 @@ SelectCards(eventName) {
             FixClick(slot.clickX, slot.clickY)
             Sleep(300)
             FixClick(400, 395)          ; confirm (same as your old style)
-
-            if (AutoAbilityBox.Value) {
-                SetTimer(CheckAutoAbility, GetAutoAbilityTimer())
-            }
             return true
         }
     }
 
     AddToLog("No cards found...")
-
-    if (AutoAbilityBox.Value) {
-        SetTimer(CheckAutoAbility, GetAutoAbilityTimer())
-    }
     return false
 }
 

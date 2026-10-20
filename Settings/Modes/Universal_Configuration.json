@@ -1,6 +1,6 @@
 ﻿{
     "Placement": {
-        "Order": 2,
+        "Order": 1,
         "Pattern": 1,
         "Speed": 3
     },
@@ -9,6 +9,7 @@
         "URL": ""
     },
     "Universal": {
+        "Matchmaking": 0,
         "NextLevel": 0,
         "ReturnToLobby": 1,
         "UsingModeConfigurations": 0
