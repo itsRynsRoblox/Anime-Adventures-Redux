@@ -1,0 +1,5 @@
+[CardPriority]
+Shield=1
+Yen=2
+Speed=3
+Regen=4

@@ -1,0 +1,714 @@
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [9:23:10 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:00:43 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:02
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:01:21 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:36:49 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:02
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:39:04 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:39:36 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:39:59 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:40:33 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:41:59 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+Region.GetAbsCoords failed 00:02
+Region.GetAbsCoords failed 00:02
+Region.GetAbsCoords failed 00:02
+Region.GetAbsCoords failed 00:02
+Region.GetAbsCoords failed 00:03
+Region.GetAbsCoords failed 00:03
+Region.GetAbsCoords failed 00:03
+Region.GetAbsCoords failed 00:03
+Region.GetAbsCoords failed 00:03
+Region.GetAbsCoords failed 00:04
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:42:04 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:42:44 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+Max Upgrade detected at (27, 456) 00:02
+Max Upgrade detected at (27, 456) 00:03
+Max Upgrade detected at (607, 591) 00:10
+Max Upgrade detected at (607, 591) 00:11
+Max Upgrade detected at (607, 591) 00:11
+Max Upgrade detected at (607, 591) 00:12
+Max Upgrade detected at (607, 591) 00:12
+Max Upgrade detected at (607, 591) 00:26
+Max Upgrade detected at (432, 541) 00:35
+Max Upgrade detected at (432, 541) 00:36
+Max Upgrade detected at (432, 541) 00:36
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [11:45:24 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:02
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [9:52:08 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:02
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [9:52:55 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+Region: 244, 484, 82, 9 00:11
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [9:57:49 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:02
+Click TOP-LEFT of wanted search area 00:05
+Click BOTTOM-RIGHT of wanted search area (top-left: 376,42) 00:08
+Region: 376, 42, 434, 87 00:09
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [6:00:25 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [6:32:16 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:02
+
+==Ryn's Anime Last Stand Macro v1.9.0==
+Start Time: [6:32:40 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already using the latest version (v1.9.0) 00:01
+Saved settings for mode: Default 00:04
+Saved settings for mode: Default 00:15
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:34:47 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:36:19 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:36:47 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:39:40 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:40:10 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:40:42 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:41:04 AM]
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:41:17 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:41:29 AM]
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:43:08 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:43:59 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:45:20 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:45:47 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:47:01 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:48:50 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:49:00 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:49:13 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:49:35 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:54:08 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:56:42 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:57:49 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:58:05 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [6:59:37 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:00:05 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:00:34 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:00:45 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:00:58 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:02:00 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:02:22 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:02:49 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:03:40 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:04:18 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:04:35 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:05:58 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:06:15 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Hog Town 00:51
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:07:46 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:13:03 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:14:20 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:14:38 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:14:57 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:15:40 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:16:23 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:20:51 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:22:13 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:22:58 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:23:33 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:25:20 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:26:13 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:27:20 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:37:08 AM]
+Settings successfully loaded for mode: Default 00:00
+Copied: 667, 154 | Color: 0x551B18 00:16
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:42:26 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:46:41 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Planet Greenie 00:22
+You need to be in the lobby to start Story 00:24
+You need to be in the lobby to start Story 00:25
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:47:35 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Planet Greenie 00:04
+You need to be in the lobby to start Story 00:05
+You need to be in the lobby to start Story 00:06
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:48:24 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Planet Greenie 00:04
+You need to be in the lobby to start Story 00:05
+You need to be in the lobby to start Story 00:06
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:51:03 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:53:35 AM]
+Settings successfully loaded for mode: Default 00:00
+You are already in the lobby, starting selected mode... 00:01
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [7:54:33 AM]
+Settings successfully loaded for mode: Default 00:00
+Copied: 582, 285 | Color: 0x1C2425 00:02
+Copied: 690, 243 | Color: 0x1B5749 00:09
+Copied: 9, 10 | Color: 0x4C5678 00:11
+Copied: 695, 249 | Color: 0x18493E 00:17
+Copied: 694, 303 | Color: 0x482E15 00:47
+Copied: 693, 364 | Color: 0x262B1F 02:33
+Copied: 695, 416 | Color: 0x161B24 03:13
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:03:50 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Walled City 00:06
+Moving to position for Walled City 00:10
+Starting Walled City - Act 1 00:17
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:04:16 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:07:28 AM]
+Settings successfully loaded for mode: Default 00:00
+Copied: 286, 238 | Color: 0xEEEEEE 00:08
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:08:27 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Walled City 00:05
+Moving to position for Walled City 00:19
+Starting Walled City - Act 2 00:26
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:09:01 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:10:26 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Walled City 00:04
+Moving to position for Walled City 00:10
+Starting Walled City - Act 2 00:17
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:10:54 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:11:25 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Walled City 00:05
+Moving to position for Walled City 00:09
+Starting Walled City - Act 2 00:16
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:11:54 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:13:37 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Walled City 00:05
+Moving to position for Walled City 00:11
+Starting Walled City - Act 2 00:18
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:14:08 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:19:24 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Planet Greenie 00:04
+Moving to position for Planet Greenie 00:07
+Starting Planet Greenie - Act 2 00:14
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:19:53 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:21:22 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Planet Greenie 00:06
+Moving to position for Planet Greenie 00:08
+Starting Planet Greenie - Act 2 00:15
+Successfully Loaded In 00:36
+Game started 00:37
+Placing Unit 2 (0/1) 00:37
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:22:12 AM]
+Settings successfully loaded for mode: Default 00:00
+Saved settings for mode: Default 00:10
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:24:40 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:28:56 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:29:18 AM]
+Settings successfully loaded for mode: Default 00:00
+Click TOP-LEFT of wanted search area 00:02
+XP screen detected - Processing results... 00:05
+Defeat - Stage Length: 00:00:04 00:06
+[Game Over] Restarting stage 00:09
+Successfully Loaded In 00:09
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:29:34 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:32:51 AM]
+Settings successfully loaded for mode: Default 00:00
+Selected Planet Greenie 00:08
+You need to be in the lobby to start Story 00:11
+Moving to position for Planet Greenie 00:22
+Starting Planet Greenie - Act 2 00:29
+Successfully Loaded In 00:49
+Found Teleport to Spawn button 00:54
+Game started 00:58
+Game started 00:59
+Game started 01:00
+Placing Unit 2 (0/1) 01:00
+Game started 01:04
+Game started 01:09
+Game started 01:14
+Game started 01:18
+Game started 01:23
+Game started 01:28
+Game started 01:32
+Game started 01:37
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:34:30 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:40:38 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:41:13 AM]
+Settings successfully loaded for mode: Default 00:00
+Placement priority changed: Slot 11 00:40
+Upgrade priority changed: Slot 11 00:44
+Saved settings for mode: Default 00:51
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:43:25 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:46:12 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:48:03 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:48:36 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:49:25 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:49:57 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:51:23 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:52:00 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:53:42 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:55:59 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [8:56:32 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:06:27 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:08:38 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:09:05 AM]
+Settings successfully loaded for mode: Default 00:00
+Priority 1 set to Shield 00:07
+Priority 2 set to Regen 00:07
+Priority 3 set to Speed 00:08
+Priority 4 set to Regen 00:09
+Priority 2 set to Yen 00:13
+Saved settings for mode: Default 00:20
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:12:41 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:21:41 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:22:43 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:25:22 AM]
+Settings successfully loaded for mode: Default 00:00
+Unit Placed Successfully 00:10
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:26:04 AM]
+Settings successfully loaded for mode: Default 00:00
+Unit Placed Successfully 00:07
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:27:09 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:28:59 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:30:27 AM]
+Settings successfully loaded for mode: Default 00:00
+Found Upgrade Cap 00:05
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:31:32 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:32:15 AM]
+Settings successfully loaded for mode: Default 00:00
+Unit Placed Successfully 00:30
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:33:58 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:50:49 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:51:27 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:51:48 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:52:46 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [9:53:51 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:04:31 AM]
+Settings successfully loaded for mode: Default 00:00
+Checking for numbers... 00:02
+Could not detect valid captcha 00:04
+Captcha not detected, retrying... 00:04
+Checking for numbers... 00:14
+Sending number: 85800 00:15
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:08:00 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:08:29 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:09:36 AM]
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:10:04 AM]
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:10:18 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:24:41 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:25:53 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:26:13 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:27:06 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:28:14 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:28:41 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:29:13 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:29:42 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:30:09 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:30:27 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:30:53 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:31:24 AM]
+Settings successfully loaded for mode: Default 00:00
+
+==Ryn's Anime Adventures Macro v1.0.0==
+Start Time: [10:32:44 AM]
+Settings successfully loaded for mode: Default 00:00

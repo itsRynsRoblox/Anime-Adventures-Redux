@@ -1,0 +1,1144 @@
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+#Include %A_ScriptDir%/Lib/Tools/Image.ahk
+#Include %A_ScriptDir%/Lib/Functions/Functions.ahk
+
+; Application Info
+global GameName := "Anime Adventures"
+global GameTitle := "Ryn's " GameName " Macro "
+global version := "v1.0.0"
+global rblxID := "ahk_exe RobloxPlayerBeta.exe"
+; Update Checker
+global repoOwner := "itsRynsRoblox"
+global repoName := "Anime Adventures Redux"
+;Coordinate and Positioning Variables
+global WM_SIZING := 0x0214
+global WM_SIZE := 0x0005
+global targetWidth := 816
+global targetHeight := 638
+global offsetX := -5
+global offsetY := 1
+global centerX := 408
+global centerY := 320
+global successfulCoordinates := []
+global totalUnits := Map()
+;Statistics Tracking
+global mode := ""
+global StartTime := A_TickCount
+global currentTime := GetCurrentTime()
+; Config and Settings
+global UnitConfigMap := Map()
+;Auto Challenge
+global challengeStartTime := A_TickCount
+global inChallengeMode := false
+global firstStartup := true
+; Testing
+global waitingState := Map()
+;Custom Unit Placement
+global waitingForClick := false
+global savedCoords := Map()
+global placementProfiles := Map()
+global placementProfileFile := A_ScriptDir "\Settings\Profiles\PlacementProfiles.json"
+; Custom Walk
+global recording := false
+global allWalks := Map()
+global keyDownTimes := Map()
+global lastActionTime := 0
+global movementProfiles := Map()
+global movementProfileFile := A_ScriptDir "\Settings\Profiles\MovementProfiles.json"
+; Custom Tiny Task
+global allRecordings := Map()
+global recordedActions := []
+global recordingProfiles := Map()
+global recordingProfileFile := A_ScriptDir "\Settings\Profiles\RecordingProfiles.json"
+;Nuke Ability
+global nukeCoords := { x: 282, y: 291 }
+;Hotkeys
+global F1Key := "F1"
+global F2Key := "F2"
+global F3Key := "F3"
+global F4Key := "F4"
+;Gui creation
+global uiBorders := []
+global uiBackgrounds := []
+global uiTheme := []
+global UnitData := []
+global MainUI := Gui("+AlwaysOnTop -Caption")
+global CardGUI := Gui("+AlwaysOnTop")
+global lastlog := ""
+global MainUIHwnd := MainUI.Hwnd
+global ActiveControlGroup := ""
+global ControlGroups := Map()
+;Theme colors
+uiTheme.Push("F2F2F2")  ; Header color
+uiTheme.Push("0c000a")  ; Background color
+uiTheme.Push("22a9e8")  ; Highlight
+uiTheme.Push("0c000a")  ; Accent color
+uiTheme.Push("0x3d3c36")   ; Trans color
+uiTheme.Push("000000")    ; Textbox color
+uiTheme.Push("22a9e8")  ; Highlight
+;Logs/Save settings
+global currentOutputFile := A_ScriptDir "\Logs\LogFile.txt"
+;Custom Pictures
+GithubImage := "Images\github-logo.png"
+DiscordImage := "Images\another_discord.png"
+
+if !DirExist(A_ScriptDir "\Logs") {
+    DirCreate(A_ScriptDir "\Logs")
+}
+if !DirExist(A_ScriptDir "\Settings") {
+    DirCreate(A_ScriptDir "\Settings")
+}
+
+setupOutputFile()
+
+; === Need To Load These Before GUI ===
+global currentCardMode := "Fool's Hunt"
+global CardModeConfigs := Map(
+    "Fool's Hunt", Map(
+        "modeName", "Fool's Hunt",
+        "title", "Fool's Hunt Card Priority",
+        "filePath", "Settings\FoolsHuntCardPriority.txt",
+        "options", [
+            "Shield",
+            "Regen",
+            "Speed",
+            "Yen",
+            "Cooldown",
+            "Damage",
+        ]
+    )
+)
+
+global currentConfig := CardModeConfigs[currentCardMode]
+
+global customDropdowns := [
+    "Custom"
+]
+
+; ========== Constants and Theme Setup ==========
+mainWidth := 1364
+mainHeight := 697
+robloxWidth := 802
+uiColors := Map(
+    "Primary", uiTheme[1],
+    "Background", uiTheme[2],
+    "Border", uiTheme[3],
+    "RobloxBox", uiTheme[5],
+    "ProcessHighlight", uiTheme[7]
+)
+
+; ========== Helper Functions ==========
+AddUI(type, options, text := "", onClickFunc := unset) {
+    ctrl := MainUI.Add(type, options, text)
+    if IsSet(onClickFunc)
+        ctrl.OnEvent("Click", onClickFunc)
+    return ctrl
+}
+
+AddBorder(x, y, w, h) {
+    return MainUI.Add("Text", Format("x{} y{} w{} h{} +Background{}", x, y, w, h, uiColors["Border"]))
+}
+; ========== GUI Initialization ==========
+
+MainUI.BackColor := uiColors["Background"]
+global Webhookdiverter := AddUI("Edit", "x0 y0 w1 h1 +Hidden")
+
+/*; ===== Game Mode Selection box (using your border system) =====
+x := 808, y := 38, w := 500, h := 45
+borderColor := uiTheme[1]          ; change if your borders use a different index
+fillColor := uiTheme[2]          ; the color you originally wanted
+
+; Four borders (exactly like your other uiBorders)
+uiBorders.Push(AddBorder(x, y + 7, w, 1,))          ; Top
+uiBorders.Push(AddBorder(x, y + h - 1, w, 1))          ; Bottom
+uiBorders.Push(AddBorder(x, y + 7, 1, h - 7))          ; Left
+uiBorders.Push(AddBorder(x + w - 1, y + 7, 1, h - 7))          ; Right
+
+; White title text centered on the top border (classic GroupBox look)
+MainUI.SetFont("s9 Bold c" uiTheme[1])
+MainUI.Add("Text", "x" x " y" (y - 7) " w" w " Center BackgroundTrans", "Game Mode Selection")
+MainUI.SetFont()                     ; reset if you want */
+
+; ========== Borders ==========
+uiBorders.Push(AddBorder(0, 0, mainWidth, 1))                          ; Top
+uiBorders.Push(AddBorder(0, 0, 1, mainHeight))                         ; Left
+uiBorders.Push(AddBorder(mainWidth - 1, 0, 1, 630))                    ; Right
+uiBorders.Push(AddBorder(mainWidth - 1, 0, 1, mainHeight))            ; Full Right
+uiBorders.Push(AddBorder(0, 30, mainWidth - 1, 1))                     ; Under Title
+uiBorders.Push(AddBorder(803, 443, 560, 1))                            ; Placement Bottom
+uiBorders.Push(AddBorder(803, 527, 560, 1))                            ; Process Bottom
+uiBorders.Push(AddBorder(802, 30, 1, 667))                             ; Roblox Right
+uiBorders.Push(AddBorder(0, mainHeight - 1, mainWidth, 1))            ; Bottom Line
+uiBorders.Push(AddBorder(0, 630, robloxWidth + 0.5, 1))               ; Game Bottom
+
+; ========== Backgrounds ==========
+uiBackgrounds.Push(MainUI.Add("Text", Format("x3 y3 w{} h27 +Background{}", mainWidth - 4, uiColors["Background"])))
+
+; ========== Roblox Window Area ==========
+global robloxHolder := MainUI.Add("Text", Format("x3 y33 w797 h597 +Background{}", uiColors["RobloxBox"]), "")
+
+; ========== Exit and Minimize Buttons ==========
+global exitButton := AddUI("Picture", "x1330 y1 w32 h32 +BackgroundTrans", Exitbutton, (*) => Destroy())
+global minimizeButton := AddUI("Picture", "x1305 y3 w27 h27 +Background" uiColors["Background"], Minimize, (*) => minimizeUI())
+
+; ========== Import ==========
+global importUnitConfigButton := AddUI("Picture", "x1312 y48 w20 h20 +BackgroundTrans", Import, (*) => LoadUnitSettingsByMode(true))
+global exportUnitConfigButton := AddUI("Picture", "x1337 y48 w20 h20 +BackgroundTrans", Export, (*) => SaveSettingsForMode(true))
+
+; ========== Title ==========
+MainUI.SetFont("Bold s16 c" uiColors["Primary"], "Verdana")
+global windowTitle := MainUI.Add("Text", "x10 y3 w1200 h29 +BackgroundTrans", GameTitle "" . "" version)
+
+; ========== Console Label ==========
+MainUI.Add("Text", "x805 y501 w558 h25 +Center +BackgroundTrans", "Console")
+uiBorders.Push(AddBorder(803, 499, 560, 1)) ; Console Top Border
+
+; ========== Process Text Lines ==========
+MainUI.SetFont("norm s11 c" uiColors["Primary"])
+global processList := []
+baseY := 536
+
+loop 7 {
+    yOffset := (A_Index - 1) * 22
+    text := ""
+    color := uiColors["Primary"]
+    if A_Index = 1 {
+        text := "➤ Original Creator: Ryn (@TheRealTension)"
+        color := uiColors["ProcessHighlight"]
+    }
+    process := MainUI.Add("Text", Format("x810 y{} w538 h18 +BackgroundTrans c{}", baseY + yOffset, color), text)
+    processList.Push(process)
+}
+
+; ========== Transparency ==========
+WinSetTransColor(uiColors["RobloxBox"], MainUI)
+
+OpenGuide(*) {
+    GuideGUI := Gui("+AlwaysOnTop")
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Title := "Ryn's " GameName " Guide"
+
+    GuideGUI.BackColor := "0c000a"
+    GuideGUI.MarginX := 20
+    GuideGUI.MarginY := 20
+
+    ; Add Guide content
+    GuideGUI.SetFont("s16 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "1 - In your ROBLOX settings, make sure your graphics are set to 1")
+    GuideGUI.Add("Picture", "x50 w700   cWhite +Center", "Images\graphics1.png")
+    GuideGUI.Show("w800")
+}
+
+OpenDebugMenu(*) {
+    DebugGUI := Gui("+AlwaysOnTop")
+    DebugGUI.SetFont("s10 bold", "Segoe UI")
+    DebugGUI.Title := "Ryn's " GameName " - Debug Menu"
+    DebugGUI.BackColor := "0c000a"
+    DebugGUI.MarginX := 20
+    DebugGUI.MarginY := 20
+
+    ; Title
+    DebugGUI.SetFont("s14 bold", "Segoe UI")
+    DebugGUI.Add("Text", "x20 y20 w460 cWhite +Center", "Debug / Test Menu")
+
+    ; Dropdown label
+    DebugGUI.SetFont("s10 bold", "Segoe UI")
+    DebugGUI.Add("Text", "x20 y70 cWhite", "Select something to test:")
+
+    ; Dropdown list of FindText / test options
+    TestOptions := [
+        "Check For Lobby",
+        "Unit Successfully Placed",
+        "Test screen resolution / DPI",
+        "Custom FindText (paste code below)"
+    ]
+
+    DDL := DebugGUI.Add("DropDownList", "x20 y95 w460 cBlack", TestOptions)
+    DDL.Choose(1)
+
+    ; Optional multi-line box for custom FindText code
+    DebugGUI.Add("Text", "x20 y140 cWhite", "Custom FindText code (optional):")
+    CustomEdit := DebugGUI.Add("Edit", "x20 y160 w460 h80 Multi cBlack")
+
+    ; Result / log area
+    DebugGUI.Add("Text", "x20 y255 cWhite", "Result / Log:")
+    ResultEdit := DebugGUI.Add("Edit", "x20 y275 w460 h120 Multi ReadOnly cBlack", "Ready...")
+
+    ; Buttons
+    DebugGUI.SetFont("s10 bold", "Segoe UI")
+    BtnTest := DebugGUI.Add("Button", "x20 y410 w140 h35", "▶ Test Selected")
+    BtnClear := DebugGUI.Add("Button", "x180 y410 w140 h35", "Clear Log")
+    BtnClose := DebugGUI.Add("Button", "x340 y410 w140 h35", "Close")
+
+    ; ========== Event handlers ==========
+    BtnTest.OnEvent("Click", (*) => RunDebugTest(DDL.Text, CustomEdit.Value, ResultEdit))
+    BtnClear.OnEvent("Click", (*) => ResultEdit.Value := "")
+    BtnClose.OnEvent("Click", (*) => DebugGUI.Destroy())
+
+    DebugGUI.Show("w500 h470")
+}
+
+; ========== Test runner ==========
+RunDebugTest(selected, customCode, ResultEdit) {
+    ResultEdit.Value := "Running: " selected "`n`n"
+
+    try {
+        if (!WinActive(rblxID)) {
+            WinActivate(rblxID)
+            Sleep 1000
+        }
+        switch selected {
+            case "Check For Lobby":
+                ResultEdit.Value .= "→ Testing Lobby FindText...`n"
+                result := CheckForLobby()
+                ResultEdit.Value .= result ? "Found!" : "Not found"
+
+            case "Unit Successfully Placed":
+                ResultEdit.Value .= "→ Testing Unit Placement FindText...`n"
+                result := UnitPlaced()
+                ResultEdit.Value .= result ? "Unit placement found!" : "Unit placement not found"    
+
+            case "Test screen resolution / DPI":
+                ResultEdit.Value .= "Screen: " A_ScreenWidth "x" A_ScreenHeight ""
+                ResultEdit.Value .= "DPI: " A_ScreenDPI
+
+            case "Custom FindText (paste code below)":
+                if (customCode = "") {
+                    ResultEdit.Value .= "No custom code entered."
+                    return
+                }
+                ResultEdit.Value .= "Executing custom code..."
+                ResultEdit.Value .= "Custom code executed (add your own logic)."
+        }
+
+        ResultEdit.Value .= "`n`nDone."
+    } catch as err {
+        ResultEdit.Value .= "ERROR: " err.Message
+    }
+}
+
+OpenPrivateServerGuide(*) {
+    GuideGUI := Gui("+AlwaysOnTop +Resize", "Ryn's Private Server Guide")
+    GuideGUI.BackColor := "0c000a"
+    GuideGUI.MarginX := 20
+    GuideGUI.MarginY := 20
+
+    ; Reset font for steps
+    GuideGUI.SetFont("s12 bold", "Segoe UI")
+
+    ; Add each step individually
+    GuideGUI.Add("Text", "cWhite", "Step 1. Create a private server")
+    GuideGUI.Add("Text", "cWhite", "Step 2. Name the server however you like")
+    GuideGUI.Add("Text", "cWhite", "Step 3. Configure the private server")
+    GuideGUI.Add("Text", "cWhite", "Step 4. Generate a link for the server")
+    GuideGUI.Add("Text", "cWhite", "Step 5. Paste the link into your browser")
+    GuideGUI.Add("Text", "cWhite", "Step 6. Wait for the link to change into the new version")
+    GuideGUI.Add("Text", "cWhite", "Step 7. Copy the URL")
+    GuideGUI.Add("Text", "cWhite", "Step 8. Paste the URL into the private server section of the macro")
+    GuideGUI.Add("Text", "cWhite", "It should look like this at the end: privateServerLinkCode=12345")
+
+    ; Show GUI
+    GuideGUI.Show("AutoSize Center")
+}
+
+MainUI.SetFont("s9 Bold c" uiTheme[1])
+
+ActiveConfigurationText:= MainUI.Add("Text", "x840 y7 +Center c" uiTheme[1], "Active Configuration: ")
+ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Map Movement", "Mode", "Upgrade", "Recording"])
+ConfigurationDropdown.OnEvent("Change", UpdateActiveConfiguration)
+
+global guideBtn := MainUI.Add("Button", "x1108 y5 w90 h20", "Guide")
+guideBtn.OnEvent("Click", OpenGuide)
+
+global settingsBtn := MainUI.Add("Button", "x1208 y5 w90 h20", "Settings")
+settingsBtn.OnEvent("Click", (*) => ToggleControlGroup("Settings"))
+
+placementSaveBtn := MainUI.Add("Button", "x807 y471 w80 h20", "Save")
+placementSaveBtn.OnEvent("Click", (*) => SaveSettingsForMode())
+
+MainUI.SetFont("s9")
+
+global NextLevelBox := MainUI.Add("Checkbox", "x900 y451 cffffff", "Next Level")
+global ReturnLobbyBox := MainUI.Add("CheckBox", "x1005 y451 cffffff Checked", "Return To Lobby")
+
+global MatchMaking := MainUI.Add("Checkbox", "x900 y476 cffffff Checked", "Matchmaking")
+global AutoAbilityBox := MainUI.Add("CheckBox", "x1015 y476  cffffff Checked", "Auto Ability")
+global AutoAbilityText := MainUI.Add("Text", "x1125 y476 c" uiTheme[1], "Auto Ability Timer:")
+global AutoAbilityTimer := MainUI.Add("Edit", "x1255 y473 w60 h20 cBlack Number", "60")
+
+;Contract Options
+global TeamSwap := MainUI.Add("CheckBox", "x900 y476 cffffff", "Team Swap")
+PhysicalTeamText := MainUI.Add("Text", "x1135 y451 w115 h20 +Center", "Physical Team")
+global PhysicalTeam := MainUI.Add("DropDownList", "x1170 y471 w45 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+MagicTeamText := MainUI.Add("Text", "x1250 y451 w80 h20 +Center", "Magic Team")
+global MagicTeam := MainUI.Add("DropDownList", "x1270 y471 w45 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+
+PlacementPatternText := MainUI.Add("Text", "x815 y390 w125 h20", "Placement Pattern")
+global PlacementPatternDropdown := MainUI.Add("DropDownList", "x825 y410 w100 h180 Choose2 +Center", ["Circle", "Custom", "Grid", "3x3 Grid", "Spiral", "Up and Down", "Random"])
+
+PlaceSpeedText := MainUI.Add("Text", "x1030 y390 w115 h20", "Placement Speed")
+global PlaceSpeed := MainUI.Add("DropDownList", "x1035 y410 w100 h180 Choose3 +Center", ["Super Fast (1s)", "Fast (1.5s)", "Default (2s)", "Slow (2.5s)", "Very Slow (3s)", "Toaster (4s)"])
+
+PlacementSelectionText := MainUI.Add("Text", "x1235 y390 w125 h20", "Placement Order")
+global PlacementSelection := MainUI.Add("DropDownList", "x1240 y410 w100 h180 Choose1 +Center", ["Default", "By Priority"])
+
+;=== Card Config GUI ===
+global CardBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Card Priority")
+
+global FoolsHuntCardText := MainUI.Add("Text", "x825 y110 Hidden cffffff", "Fool's Hunt Cards: ")
+global FoolsHuntCardButton := MainUI.Add("Button", "x975 y108 w80 h20 Hidden cffffff", "Edit Cards")
+FoolsHuntCardButton.OnEvent("Click", (*) => SwitchCardMode("Fool's Hunt"))
+
+; === Event Configuration ===
+global EventBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Event Configuration")
+global HalloweenRestart := MainUI.Add("Checkbox", "x825 y110 Hidden cffffff", "Restart Halloween on wave: " )
+global HalloweenRestartTimer := MainUI.Add("Edit", "x1060 y108 Hidden w45 h20 Hidden cBlack Number", "58")
+global HalloweenPremadeMovement := MainUI.Add("Checkbox", "x825 y140 Hidden cffffff", "Enable premade movement for Halloween")
+
+placementSaveText := MainUI.Add("Text", "x807 y451 w80 h20", "Save Config")
+
+Hotkeytext := MainUI.Add("Text", "x807 y35 w200", F1Key ": Fix Roblox Position")
+Hotkeytext2 := MainUI.Add("Text", "x807 y50 w200", F2Key ": Start Macro")
+Hotkeytext3 := MainUI.Add("Text", "x807 y65 w200", F3Key ": Stop Macro")
+
+DiscordButton := MainUI.Add("Picture", "x30 y645 w60 h34 BackgroundTrans", DiscordImage)
+; === End of Custom Walk Settings ===
+
+; === Settings GUI ===
+global WebhookBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Webhook Settings")
+global WebhookEnabled := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff", "Webhook Enabled")
+WebhookEnabled.OnEvent("Click", (*) => ValidateWebhook())
+global WebhookLogsEnabled := MainUI.Add("CheckBox", "x825 y130 Hidden cffffff", "Send Console Logs")
+global WebhookURLBox := MainUI.Add("Edit", "x1000 y108 w260 h20 Hidden c" uiTheme[6], "")
+
+global PrivateSettingsBorder := MainUI.Add("GroupBox", "x808 y145 w550 h296 +Center Hidden c" uiTheme[1], "Reconnection Settings")
+global PrivateServerEnabled := MainUI.Add("CheckBox", "x825 y165 Hidden cffffff", "Reconnect to Private Server")
+global PrivateServerURLBox := MainUI.Add("Edit", "x1050 y163 w160 h20 Hidden c" uiTheme[6], "")
+PrivateServerTestButton := MainUI.Add("Button", "x1225 y163 w50 h20 Hidden", "Test")
+PrivateServerTestButton.OnEvent("Click", (*) => Reconnect(true))
+PrivateServerGuideButton := MainUI.Add("Button", "x1285 y163 w50 h20 Hidden", "Guide")
+PrivateServerGuideButton.OnEvent("Click", OpenPrivateServerGuide)
+global TeleportFailsafe := MainUI.Add("CheckBox", "x825 y185 Hidden cffffff", "Enable Teleport Failsafe")
+global TeleportFailsafeTimerText := MainUI.Add("Text", "x1050 y188 h20 Hidden c" uiTheme[1], "Time until reconnect:")
+global TeleportFailsafeTimer := MainUI.Add("Edit", "x1195 y186 w50 h20 Hidden Number c" uiTheme[6], "60")
+; === End of Settings GUI ===
+
+; HotKeys
+global KeybindBorder := MainUI.Add("GroupBox", "x808 y205 w195 h176 +Center Hidden c" uiTheme[1], "Keybind Settings")
+global F1Text := MainUI.Add("Text", "x825 y230 Hidden c" uiTheme[1], "Position Roblox:")
+global F1Box := MainUI.Add("Edit", "x950 y228 w30 h20 Hidden c" uiTheme[6], F1Key)
+global F2Text := MainUI.Add("Text", "x825 y260 Hidden c" uiTheme[1], "Start Macro:")
+global F2Box := MainUI.Add("Edit", "x950 y258 w30 h20 Hidden c" uiTheme[6], F2Key)
+global F3Text := MainUI.Add("Text", "x825 y290 Hidden c" uiTheme[1], "Stop Macro:")
+global F3Box := MainUI.Add("Edit", "x950 y288 w30 h20 Hidden c" uiTheme[6], F3Key)
+global F4Text := MainUI.Add("Text", "x825 y320 Hidden c" uiTheme[1], "Pause Macro:")
+global F4Box := MainUI.Add("Edit", "x950 y318 w30 h20 Hidden c" uiTheme[6], F4Key)
+
+keybindSaveBtn := MainUI.Add("Button", "x880 y350 w50 h20 Hidden", "Save")
+keybindSaveBtn.OnEvent("Click", SaveKeybindSettings)
+
+global UpgradeBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Upgrade Settings")
+global EnableUpgrading := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff Checked", "Enable Upgrading")
+global UnitManagerUpgradeSystem := MainUI.Add("CheckBox", "x825 y130 Hidden cffffff", "Use the Unit Manager to upgrade your units")
+global PriorityUpgrade := MainUI.Add("CheckBox", "x825 y150 cffffff Hidden Checked", "Use Unit Priority while upgrading")
+
+global ZoomSettingsBorder := MainUI.Add("GroupBox", "x1000 y205 w165 h176 +Center Hidden c" uiTheme[1], "Zoom Tech Settings")
+global ZoomText := MainUI.Add("Text", "x1018 y230 Hidden c" uiTheme[1], "Zoom Level:")
+global ZoomBox := MainUI.Add("Edit", "x1115 y228 w30 h20 Hidden cBlack Number", "20")
+global ZoomTech := MainUI.Add("Checkbox", "x1018 y260 Hidden Checked c" uiTheme[1], "Enable Zoom Tech")
+global ZoomInOption := MainUI.Add("Checkbox", "x1018 y290 Hidden Checked c" uiTheme[1], "Zoom in then out")
+global ZoomTeleport := MainUI.Add("Checkbox", "x1018 y320 Hidden c" uiTheme[1], "Teleport to spawn")
+ZoomBox.OnEvent("Change", (*) => ValidateEditBox(ZoomBox))
+
+global MiscSettingsBorder := MainUI.Add("GroupBox", "x1163 y205 w195 h176 +Center Hidden c" uiTheme[1], "Update Settings")
+global UpdateChecker := MainUI.Add("Checkbox", "x1175 y230 Hidden cffffff Checked", "Enable update checker")
+
+global ModeBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Mode Configuration")
+global ModeConfigurations := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff", "Enable Per-Mode Unit Settings")
+
+global StoryBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Story Settings")
+global NightmareDifficulty := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff", "Nightmare Difficulty")
+
+global PortalBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Portal Settings")
+global PortalLobby := MainUI.Add("CheckBox", "x825 y280 Hidden cffffff", "Starting portal from the lobby")
+
+; === Disbled At The Moment ===
+global SJWNuke := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff", "Use SJW Nuke")
+global SJWSlotText := MainUI.Add("Text", "x825 y130 Hidden cffffff", "SJW Slot")
+global SJWSlot := MainUI.Add("DropDownlist", "x905 y128 w45 Hidden Choose0 +Center", ["1", "2", "3", "4", "5", "6"])
+; === End of Disabled At The Moment ===
+
+global UnitBorder := MainUI.Add("GroupBox", "x808 y166 w550 h220 +Center Hidden" uiTheme[1], "Unit Manager Position Fixes")
+global MinionSlot1 := MainUI.Add("CheckBox", "x825 y186 cffffff Hidden", "Slot 1 adds extra unit")
+global MinionSlot2 := MainUI.Add("CheckBox", "x1005 y186 cffffff Hidden", "Slot 2 adds extra unit")
+global MinionSlot3 := MainUI.Add("CheckBox", "x1185 y186 cffffff Hidden", "Slot 3 adds extra unit")
+global MinionSlot4 := MainUI.Add("CheckBox", "x825 y212 cffffff Hidden", "Slot 4 adds extra unit")
+global MinionSlot5 := MainUI.Add("CheckBox", "x1005 y212 cffffff Hidden", "Slot 5 adds extra unit")
+global MinionSlot6 := MainUI.Add("CheckBox", "x1185 y212 cffffff Hidden", "Slot 6 adds extra unit")
+; === End Unit Config GUI ===
+
+; === Custom Recording GUI ===
+global RecordBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Recording Configuration")
+global RecordMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
+global RecordMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
+AddRecordingProfileButton := MainUI.Add("Picture", "x1120 y103 w15 h15 Hidden", Add)
+AddRecordingProfileButton.OnEvent("Click", (*) => AddRecordingProfile())
+DeleteRecordingProfileButton := MainUI.Add("Picture", "x1120 y118 w15 h15 Hidden", Trash)
+DeleteRecordingProfileButton.OnEvent("Click", (*) => DeleteRecordingProfile())
+ImportRecording := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hidden", Import)
+ImportRecording.OnEvent("Click", ImportRecordings)
+ExportRecording := MainUI.Add("Picture", "x845 y108 w20 h20 +BackgroundTrans Hidden", Export)
+ExportRecording.OnEvent("Click", (*) => ExportRecordings(RecordMapDropdown.Text))
+global ShouldUseRecording := MainUI.Add("CheckBox", "x825 y140 Hidden cffffff", "Use custom recording instead of the default macro")
+global ShouldUseSetup := MainUI.Add("CheckBox", "x825 y170 Hidden cffffff", "Use the macro's setup feature (zoom, walk to custom path)")
+global ShouldHandleGameEnd := MainUI.Add("CheckBox", "x825 y230 Hidden cffffff", "Automatically restart recording when/if the game ends")
+global ShouldLoopRecording := MainUI.Add("CheckBox", "x825 y200 Hidden cffffff", "Loop recorded actions infintely")
+RecordStartButton := MainUI.Add("Button", "x1140 y110 w60 h20 Hidden", "Set")
+RecordStartButton.OnEvent("Click", StartRecordingActionsForMap)
+RecordClearButton := MainUI.Add("Button", "x1215 y110 w60 h20 Hidden", "Clear")
+RecordClearButton.OnEvent("Click", ClearRecordings)
+RecordTestButton := MainUI.Add("Button", "x1290 y110 w60 h20 Hidden", "Test")
+RecordTestButton.OnEvent("Click", (*) => PlayRecordedActions())
+RecordImport := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hidden", Import)
+
+;=== Custom Walk GUI ===
+global CustomWalkBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden" uiTheme[1], "Custom Walk Configuration")
+global WalkMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
+global WalkMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
+AddMovementProfileButton := MainUI.Add("Picture", "x1120 y103 w15 h15 Hidden", Add)
+AddMovementProfileButton.OnEvent("Click", (*) => AddMovementProfile())
+DeleteMovementProfileButton := MainUI.Add("Picture", "x1120 y118 w15 h15 Hidden", Trash)
+DeleteMovementProfileButton.OnEvent("Click", (*) => DeleteMovementProfile())
+MovementSetButton := MainUI.Add("Button", "x1140 y110 w60 h20 +BackgroundTrans Hidden", "Set")
+MovementSetButton.OnEvent("Click", StartRecordingWalk)
+MovementClearButton := MainUI.Add("Button", "x1215 y110 w60 h20 Hidden", "Clear")
+MovementClearButton.OnEvent("Click", ClearMovement)
+MovementTestButton := MainUI.Add("Button", "x1290 y110 w60 h20 Hidden", "Test")
+MovementTestButton.OnEvent("Click", (*) => StartWalk(true))
+MovementImport := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hidden", Import)
+MovementImport.OnEvent("Click", (*) => ImportMovements())
+MovementExport := MainUI.Add("Picture", "x845 y108 w20 h20 +BackgroundTrans Hidden", Export)
+MovementExport.OnEvent("Click", (*) => ExportMovements(WalkMapDropdown.Text))
+
+; === Custom Placement Settings ===
+global CustomSettings := MainUI.Add("GroupBox", "x130 y632 w665 h60 +Center c" uiTheme[1], "Custom Placement Settings")
+PlacementSettingsImportButton := AddUI("Picture", "x150 y652 w27 h27 +BackgroundTrans", Import, (*) => ImportCustomCoords())
+PlacementSettingsExportButton := AddUI("Picture", "x195 y652 w27 h27 +BackgroundTrans", Export, (*) => ExportCustomCoords(CustomPlacementMapDropdown.Text))
+CustomPlacementMap := MainUI.Add("Text", "x305 y645 w60 h20 +Left", "Profile")
+AddCustomPlacementProfile := MainUI.Add("Picture", "x425 y650 w15 h15 +BackgroundTrans", Add)
+AddCustomPlacementProfile.OnEvent("Click", (*) => AddPlacementProfile())
+RemoveCustomPlacementProfile := MainUI.Add("Picture", "x425 y670 w15 h15 +BackgroundTrans", Trash)
+RemoveCustomPlacementProfile.OnEvent("Click", (*) => DeletePlacementProfile())
+global CustomPlacementMapDropdown := MainUI.AddDropDownList("x240 y663 w180 h200 +Center")
+
+CustomPlacementButton := MainUI.Add("Button", "x450 y658 w85 h20", "Set")
+CustomPlacementButton.OnEvent("Click", (*) => StartCoordinateCapture())
+CustomPlacementClearButton := MainUI.Add("Button", "x575 y658 w85 h20", "Clear")
+CustomPlacementClearButton.OnEvent("Click", (*) => DeleteCustomCoordsForPreset(CustomPlacementMapDropdown.Text))
+fixCameraButton := MainUI.Add("Button", "x695 y658 w85 h20", "Fix Camera")
+fixCameraButton.OnEvent("Click", (*) => BasicSetup(true))
+
+;GithubButton.OnEvent("Click", (*) => OpenGithub())
+DiscordButton.OnEvent("Click", (*) => OpenDiscord())
+;--------------SETTINGS--------------;
+global modeSelectionGroup := MainUI.Add("GroupBox", "x808 y38 w500 h45 +Center Background" uiTheme[2], "Game Mode Selection")
+MainUI.SetFont("s10 c" uiTheme[6])
+global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Custom"])
+global EventDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center Hidden", ["Fool's Hunt"])
+global StoryDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Planet Greenie", "Walled City", "Snowy Town", "Sand Village", "Navy Bay", "Fiend City", "Spirit World", "Ant Kingdom", "Magic Town", "Haunted Academy", "Magic Hills", "Space Center", "Alien Spaceship", "Fabled Kingdom", "Ruined City", "Puppet Island", "Virtual Dungeon", "Snowy Kingdom", "Dungeon Throne", "Mountain Temple", "Rain Village", "Shibuya District"])
+global StoryActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Infinity"])
+global LegendDropDown := MainUI.Add("DropDownlist", "x968 y53 w150 h180 Choose0 +Center", ["Magic Hills", "Spirit Invasion", "Space Center", "Fabled Kingdom", "Ruined City", "Virtual Dungeon", "Dungeon Throne", "Rain Village"] )
+global LegendActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Random"])
+global RaidDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Ant Kingdom", "Sacred Planet", "Strange Town", "Ruined City", "Cursed Festival", "Future City (Tyrant)", "Storm Hideout", "Future City", "Nightmare Train", "Sand Village"])
+global RaidActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5"])
+global InfinityCastleDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Normal", "Hard"])
+global PortalDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Alien Portal", "Puppet Portal", "Demon Leader's Portal", "Eclipse Portal", "Noble Portal", "Shibuya Portal"])
+global PortalRoleDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Creating", "Joining", "Solo"])
+global ContractPageDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Page 1", "Page 2","Page 3","Page 4","Page 5","Page 6", "Page 4-5"])
+global ContractJoinDropdown := MainUI.Add("DropDownList", "x1057 y53 w120 h180 Choose0 +Center", ["Creating", "Joining","Matchmaking", "Solo"])
+global ConfirmButton := MainUI.Add("Button", "x1218 y53 w80 h25", "Confirm")
+
+
+LegendDropDown.Visible := false
+LegendActDropdown.Visible := false
+RaidDropdown.Visible := false
+RaidActDropdown.Visible := false
+ContractJoinDropdown.Visible := false
+ContractPageDropdown.Visible := false
+InfinityCastleDropdown.Visible := false
+
+;Contracts
+TeamSwap.Visible := false
+MagicTeamText.Visible := false
+MagicTeam.Visible := false
+PhysicalTeamText.Visible := false
+PhysicalTeam.Visible := false
+
+Hotkeytext.Visible := false
+Hotkeytext2.Visible := false
+Hotkeytext3.Visible := false
+ModeDropdown.OnEvent("Change", OnModeChange)
+EventDropdown.OnEvent("Change", OnEventChange)
+StoryDropdown.OnEvent("Change", OnStoryChange)
+LegendDropDown.OnEvent("Change", OnLegendChange)
+RaidDropdown.OnEvent("Change", OnRaidChange)
+PlacementPatternDropdown.OnEvent("Change", OnPlacementChange)
+ConfirmButton.OnEvent("Click", OnConfirmClick)
+;------MAIN UI------;
+
+;------UNIT CONFIGURATION------UNIT CONFIGURATION------UNIT CONFIGURATION/------UNIT CONFIGURATION/------UNIT CONFIGURATION/------UNIT CONFIGURATION/
+
+AddUnitCard(MainUI, index, x, y) {
+    unit := {}
+
+    ; Helper for adding styled text
+    AddText(ctrlX, ctrlY, width, height, options := "", text := "") {
+        return MainUI.Add("Text", Format("x{} y{} w{} h{} {}", ctrlX, ctrlY, width, height, options), text)
+    }
+
+    ; Background and borders
+    unit.Background     := AddText(x, y, 550, 45, "+Background" uiTheme[4])
+    unit.BorderTop      := AddText(x, y, 550, 2, "+Background" uiTheme[3])
+    unit.BorderBottom   := AddText(x, y + 45, 552, 2, "+Background" uiTheme[3])
+    unit.BorderLeft     := AddText(x, y, 2, 45, "+Background" uiTheme[3])
+    unit.BorderRight    := AddText(x + 550, y, 2, 45, "+Background" uiTheme[3])
+    unit.BorderRight2   := AddText(x + 250, y, 2, 45, "+Background" uiTheme[3])
+    unit.BorderRight3 := AddText(x + 420, y, 2, 45, "+Background" uiTheme[3])
+
+    ; Main Labels
+    MainUI.SetFont("s11 Bold c" uiTheme[1])
+    unit.EnabledTitle   := AddText(x + 30, y + 18, 60, 25, "+BackgroundTrans", "Unit " index)
+
+    ; Unit Configuration
+    MainUI.SetFont("s9 c" uiTheme[1])
+    unit.PlacementText        := AddText(x + 90, y + 2, 80, 20, "+BackgroundTrans", "Placements")
+    unit.PriorityText         := AddText(x + 185, y + 2, 60, 20, "BackgroundTrans", "Priority")
+
+    if (!AutoUpgradeDisabled) {
+        unit.AutoUpgradeText := AddText(x + 275, y + 25, 250, 20, "BackgroundTrans", "Enable Auto Upgrade")
+    }
+
+    if (!AutoAbilityDisabled) {
+        unit.AutoAbilityText := AddText(x + 275, y + 5, 250, 20, "BackgroundTrans", "Enable Auto Ability")
+    }
+
+    if (!unitUpgradeLimitDisabled) {
+        unit.UpgradeCapText := AddText(x + 440, y + 2, 250, 20, "BackgroundTrans", "Upgrade Limit")
+        unit.UpgradeLimitTitle := AddText(x + 445, y + 20, 250, 25, "+BackgroundTrans", "Enabled")
+    }
+    UnitData.Push(unit)
+    return unit
+}
+
+
+;Create Unit slot
+y_start := 85
+y_spacing := 50
+Loop 6 {
+    AddUnitCard(MainUI, A_Index, 808, y_start + ((A_Index-1)*y_spacing))
+}
+
+enabled1 := MainUI.Add("CheckBox", "x818 y105 w15 h15", "")
+enabled2 := MainUI.Add("CheckBox", "x818 y155 w15 h15", "")
+enabled3 := MainUI.Add("CheckBox", "x818 y205 w15 h15", "")
+enabled4 := MainUI.Add("CheckBox", "x818 y255 w15 h15", "")
+enabled5 := MainUI.Add("CheckBox", "x818 y305 w15 h15", "")
+enabled6 := MainUI.Add("CheckBox", "x818 y355 w15 h15", "")
+
+abilityEnabled1 := MainUI.Add("CheckBox", "x1065 y90 w15 h15", "")
+upgradeEnabled1 := MainUI.Add("CheckBox", "x1065 y110 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
+
+abilityEnabled2 := MainUI.Add("CheckBox", "x1065 y140 w15 h15", "")
+upgradeEnabled2 := MainUI.Add("CheckBox", "x1065 y160 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
+
+abilityEnabled3 := MainUI.Add("CheckBox", "x1065 y190 w15 h15", "")
+upgradeEnabled3 := MainUI.Add("CheckBox", "x1065 y210 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
+
+abilityEnabled4 := MainUI.Add("CheckBox", "x1065 y240 w15 h15", "")
+upgradeEnabled4 := MainUI.Add("CheckBox", "x1065 y260 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
+
+abilityEnabled5 := MainUI.Add("CheckBox", "x1065 y290 w15 h15", "")
+upgradeEnabled5 := MainUI.Add("CheckBox", "x1065 y310 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
+
+abilityEnabled6 := MainUI.Add("CheckBox", "x1065 y340 w15 h15", "")
+upgradeEnabled6 := MainUI.Add("CheckBox", "x1065 y360 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
+
+upgradeLimitEnabled1 := MainUI.Add("CheckBox", "x1235 y105 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
+upgradeLimitEnabled2 := MainUI.Add("CheckBox", "x1235 y155 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
+upgradeLimitEnabled3 := MainUI.Add("CheckBox", "x1235 y205 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
+upgradeLimitEnabled4 := MainUI.Add("CheckBox", "x1235 y255 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
+upgradeLimitEnabled5 := MainUI.Add("CheckBox", "x1235 y305 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
+upgradeLimitEnabled6 := MainUI.Add("CheckBox", "x1235 y355 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
+
+MainUI.SetFont("s8 c" uiTheme[6])
+
+; Placement dropdowns
+Placement1 := MainUI.Add("DropDownList", "x918 y105 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Placement2 := MainUI.Add("DropDownList", "x918 y155 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Placement3 := MainUI.Add("DropDownList", "x918 y205 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Placement4 := MainUI.Add("DropDownList", "x918 y255 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Placement5 := MainUI.Add("DropDownList", "x918 y305 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Placement6 := MainUI.Add("DropDownList", "x918 y355 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+
+Priority1 := MainUI.Add("DropDownList", "x980 y105 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Priority1.OnEvent("Change", (*) => OnPriorityChange("Placement", 1, Priority1.Value))
+
+Priority2 := MainUI.Add("DropDownList", "x980 y155 w35 h180 Choose2 +Center", ["1","2","3","4","5","6"])
+Priority2.OnEvent("Change", (*) => OnPriorityChange("Placement", 2, Priority2.Value))
+
+Priority3 := MainUI.Add("DropDownList", "x980 y205 w35 h180 Choose3 +Center", ["1","2","3","4","5","6"])
+Priority3.OnEvent("Change", (*) => OnPriorityChange("Placement", 3, Priority3.Value))
+
+Priority4 := MainUI.Add("DropDownList", "x980 y255 w35 h180 Choose4 +Center", ["1","2","3","4","5","6"])
+Priority4.OnEvent("Change", (*) => OnPriorityChange("Placement", 4, Priority4.Value))
+
+Priority5 := MainUI.Add("DropDownList", "x980 y305 w35 h180 Choose5 +Center", ["1","2","3","4","5","6"])
+Priority5.OnEvent("Change", (*) => OnPriorityChange("Placement", 5, Priority5.Value))
+
+Priority6 := MainUI.Add("DropDownList", "x980 y355 w35 h180 Choose6 +Center", ["1","2","3","4","5","6"])
+Priority6.OnEvent("Change", (*) => OnPriorityChange("Placement", 6, Priority6.Value))
+
+UpgradePriority1 := MainUI.Add("DropDownList", "x1020 y105 w35 h180 Choose1 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority1.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 1, UpgradePriority1.Text))
+
+UpgradePriority2 := MainUI.Add("DropDownList", "x1020 y155 w35 h180 Choose2 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority2.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 2, UpgradePriority2.Text))
+
+UpgradePriority3 := MainUI.Add("DropDownList", "x1020 y205 w35 h180 Choose3 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority3.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 3, UpgradePriority3.Text))
+
+UpgradePriority4 := MainUI.Add("DropDownList", "x1020 y255 w35 h180 Choose4 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority4.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 4, UpgradePriority4.Text))
+
+UpgradePriority5 := MainUI.Add("DropDownList", "x1020 y305 w35 h180 Choose5 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority5.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 5, UpgradePriority5.Text))
+
+UpgradePriority6 := MainUI.Add("DropDownList", "x1020 y355 w35 h180 Choose6 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority6.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 6, UpgradePriority6.Text))
+
+; Upgrade Limit
+UpgradeLimit1 := MainUI.Add("DropDownList", "x1310 y105 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+UpgradeLimit2 := MainUI.Add("DropDownList", "x1310 y155 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+UpgradeLimit3 := MainUI.Add("DropDownList", "x1310 y205 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+UpgradeLimit4 := MainUI.Add("DropDownList", "x1310 y255 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+UpgradeLimit5 := MainUI.Add("DropDownList", "x1310 y305 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+UpgradeLimit6 := MainUI.Add("DropDownList", "x1310 y355 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+
+LoadUnitSettingsByMode()
+
+OnMessage(0x201, WM_LBUTTONDOWN)
+WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
+    global MainUI
+    try {
+        if hwnd = MainUI.Hwnd {
+            MouseGetPos(&mx, &my)
+            if (my <= 12) {
+                PostMessage(0xA1, 2, , , "A")
+            }
+        }
+    }
+}
+
+MainUI.Show("w1366 h700")
+CenterMacroWindow()   ; Window follow was: WinMove(0, 0,,, "ahk_id " aaMainUIHwnd)
+SetupDraggableGui()   ; Window follow drag the GUI by its background, Roblox follows
+forceRobloxSize()  ; Initial force size and position
+SetTimer(checkRobloxSize, 600000)  ; Check every 10 minutes
+;------FUNCTIONS------;
+
+AddToLog(current) {
+    global processList, currentOutputFile, lastlog
+    global WebhookLogsEnabled, WebhookEnabled
+
+    ; Shift values downward and remove arrows
+    loop processList.Length {
+        i := processList.Length - A_Index + 1
+        if (i > 1)
+            processList[i].Value := StrReplace(processList[i - 1].Value, "➤ ", "")
+    }
+
+    ; Add new entry to the top
+    processList[1].Value := "➤ " . current
+
+    ; Optional: Log to file
+    elapsedTime := getElapsedTime()
+    Sleep(50)
+
+    ; Remove emojis from the log string
+    cleanCurrent := CleanString(current)
+
+    ; Optional: Log to file
+    elapsedTime := getElapsedTime()
+    Sleep(50)
+    FileAppend(cleanCurrent . " " . elapsedTime . "`n", currentOutputFile)
+
+    ; Store last log and optionally send webhook
+    lastlog := current
+    if (WebhookLogsEnabled.Value && WebhookEnabled.Value && scriptInitialized)
+        WebhookLog()
+}
+
+;Timer
+getElapsedTime() {
+    global StartTime
+    ElapsedTime := A_TickCount - StartTime
+    Minutes := Mod(ElapsedTime // 60000, 60)  
+    Seconds := Mod(ElapsedTime // 1000, 60)
+    return Format("{:02}:{:02}", Minutes, Seconds)
+}
+
+;Basically the code to move roblox, below
+
+sizeDown() {
+    global rblxID, targetWidth, targetHeight
+
+    if !WinExist(rblxID) {
+        return
+    }
+
+    WinActivate(rblxID)
+    WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
+
+    if (OutWidth == targetWidth && OutHeight == targetHeight) {
+        return
+    }
+
+    ; Check if in fullscreen
+    isFullscreen := (OutWidth >= A_ScreenWidth && OutHeight >= A_ScreenHeight)
+    if (isFullscreen) {
+        Send "{F11}"
+        Sleep(300)
+
+        ; Recheck size
+        WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
+        if (OutWidth >= A_ScreenWidth && OutHeight >= A_ScreenHeight) {
+            return
+        }
+    }
+
+    loop 3 {
+        if (debugMessages) {
+            AddToLog("Attempt " A_Index ": current size: " OutWidth "x" OutHeight)
+        }
+        WinMove(X, Y, targetWidth, targetHeight, rblxID)
+        Sleep(150)
+
+        WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
+        if (OutWidth == targetWidth && OutHeight == targetHeight) {
+            return
+        }
+    }
+    if (debugMessages) {
+        AddToLog("Failed to resize after 3 attempts. Final size: " OutWidth "x" OutHeight)
+    }
+}
+
+moveRobloxWindow() {
+    global MainUIHwnd, offsetX, offsetY, rblxID
+    
+    if !WinExist(rblxID) {
+        AddToLog("Waiting for Roblox window...")
+        return
+    }
+
+    ; First ensure correct size
+    sizeDown()
+    
+    ; Then move relative to main UI
+    WinGetPos(&x, &y, &w, &h, MainUIHwnd)
+    WinMove(x + offsetX, y + offsetY,,, rblxID)
+    WinActivate(rblxID)
+}
+
+forceRobloxSize() {
+    global rblxID
+    
+    if !WinExist(rblxID) {
+        checkCount := 0
+        While !WinExist(rblxID) {
+            Sleep(5000)
+            if(checkCount >= 5) {
+                AddToLog("Attempting to locate the Roblox window")
+            } 
+            checkCount += 1
+            if (checkCount > 12) { ; Give up after 1 minute
+                AddToLog("Could not find Roblox window")
+                return
+            }
+        }
+        AddToLog("Found Roblox window")
+    }
+
+    WinActivate(rblxID)
+    sizeDown()
+    moveRobloxWindow()
+}
+
+; Function to periodically check window size
+checkRobloxSize() {
+    global rblxID
+    if WinExist(rblxID) {
+        WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
+        if (OutWidth != targetWidth || OutHeight != targetHeight) {
+            sizeDown()
+            moveRobloxWindow()
+        }
+    }
+}
+
+checkSizeTimer() {
+    if (WinExist("ahk_exe RobloxPlayerBeta.exe")) {
+        WinGetPos(&X, &Y, &OutWidth, &OutHeight, "ahk_exe RobloxPlayerBeta.exe")
+        if (OutWidth != 816 || OutHeight != 638) {
+            AddToLog("Fixing Roblox window size")
+            moveRobloxWindow()
+        }
+    }
+}
+
+UpdateTooltip() {
+    global waitingForClick
+    if waitingForClick {
+        MouseGetPos &x, &y
+        ToolTip "Click anywhere to save coordinates...", x + 10, y + 10  ; Offset tooltip slightly
+    } else {
+        ToolTip()  ; Hide tooltip when not waiting
+        SetTimer UpdateTooltip, 0  ; Stop the timer
+    }
+}
+
+ClearToolTip() {
+    ToolTip()  ; Properly clear tooltip
+    Sleep 100  ; Small delay to ensure clearing happens across all systems
+    ToolTip()  ; Redundant clear to catch edge cases
+}
+
+InitControlGroups() {
+    global ControlGroups
+
+    ControlGroups["Unit"] := []
+
+    Blacklist := [""]
+
+    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled", "upgradeLimit", "abilityEnabled"] {
+        loop 6 {
+            varName := name . A_Index
+            baseName := RegExReplace(varName, "\d+$")
+
+            ; Check if baseName is in Blacklist manually
+            isBlacklisted := false
+            for index, item in Blacklist {
+                if (item = baseName) {
+                    isBlacklisted := true
+                    break
+                }
+            }
+
+            if (isBlacklisted)
+                continue
+
+            if IsSet(%varName%)  ; Check if the variable exists
+                ControlGroups["Unit"].Push(%varName%)
+            else
+                AddToLog("Variable " . varName . " does not exist!")
+        }
+    }
+
+    ControlGroups["Settings"] := [
+        WebhookBorder, WebhookEnabled, WebhookLogsEnabled, WebhookURLBox,
+        PrivateSettingsBorder, PrivateServerEnabled, PrivateServerURLBox, PrivateServerTestButton, PrivateServerGuideButton,
+        TeleportFailsafe, TeleportFailsafeTimerText, TeleportFailsafeTimer,
+        KeybindBorder, F1Text, F1Box, F2Text, F2Box, F3Text, F3Box, F4Text, F4Box, keybindSaveBtn,
+        ZoomSettingsBorder, ZoomText, ZoomBox, ZoomTech, ZoomInOption, ZoomTeleport,
+        MiscSettingsBorder, UpdateChecker
+    ]
+
+    ControlGroups["Upgrade"] := [
+        UpgradeBorder, EnableUpgrading, UnitManagerUpgradeSystem, PriorityUpgrade,
+        UnitBorder, MinionSlot1, MinionSlot2, MinionSlot3, MinionSlot4, MinionSlot5, MinionSlot6
+
+    ]
+
+    ControlGroups["Mode"] := [
+        ModeBorder, ModeConfigurations
+    ]
+
+    ControlGroups["Event"] := [
+        EventBorder,
+        HalloweenRestart, HalloweenRestartTimer, HalloweenPremadeMovement
+    ]
+
+    ControlGroups["Story"] := [
+        StoryBorder,
+        NightmareDifficulty
+    ]
+
+    ControlGroups["Portal"] := [
+        PortalBorder
+    ]
+
+    ControlGroups["Cards"] := [
+        CardBorder,
+        FoolsHuntCardButton, FoolsHuntCardText
+    ]
+
+    ControlGroups["Map Movement"] := [
+        CustomWalkBorder, WalkMapText, WalkMapDropdown, MovementSetButton, MovementClearButton, MovementTestButton,
+        MovementImport, MovementExport
+    ]
+
+    ControlGroups["Recording"] := [
+        RecordBorder, RecordMapText, RecordMapDropdown, AddRecordingProfileButton, DeleteRecordingProfileButton,
+        ImportRecording, ExportRecording, ShouldUseRecording, ShouldUseSetup, ShouldLoopRecording, ShouldHandleGameEnd,
+        RecordStartButton, RecordClearButton, RecordTestButton
+    ]
+}
+
+ShowOnlyControlGroup(groupName) {
+    global ControlGroups
+    if !ControlGroups.Has(groupName) {
+        return false
+    }
+
+    for name, groupControls in ControlGroups {
+        shouldShow := (name = groupName)
+        for ctrl in groupControls {
+            if IsObject(ctrl)
+                ctrl.Visible := shouldShow
+        }
+    }
+    return true
+}
+
+ToggleControlGroup(groupName) {
+    global ActiveControlGroup
+    if (groupName = "Mode") {
+        ActiveControlGroup := "Mode"
+    }
+    if (groupName = "Settings") {
+        if (ActiveControlGroup = "Settings") {
+            groupName := "Unit"
+            ActiveControlGroup := "Unit"
+        } else {
+            ActiveControlGroup := "Settings"
+        }
+    }
+    if (ShowOnlyControlGroup((groupName = "Mode" ? ModeDropdown.Text : groupName))) {
+        ; AddToLog("Displaying: " (groupName = "Settings" ? "Settings UI" : groupName " Settings UI"))
+        SetUnitCardVisibility((groupName = "Unit") ? true : false)
+    }
+}
+
+SetUnitCardVisibility(visible) {
+    for _, unit in UnitData {
+        for _, ctrl in unit.OwnProps() {
+            if IsObject(ctrl)
+                ctrl.Visible := visible
+        }
+    }
+
+    for name in ["Placement", "Enabled", "UpgradeEnabled", "Priority", "UpgradePriority", "AbilityEnabled"] {
+        loop 6 {
+            ctrl := %name%%A_Index%
+            if IsObject(ctrl)
+                ctrl.Visible := visible
+        }
+    }
+}
+
+ValidateWebhook() {
+    global WebhookURLBox
+
+    url := WebhookURLBox.Value
+    
+    if (url == "") {
+        WebhookEnabled.Value := false
+        WebhookURLBox.Value := ""
+        MsgBox("Webhook URL cannot be blank. Please enter a valid Webhook URL.", "Missing URL", "+0x1000")
+        return
+    }
+    
+    if (!RegExMatch(url, "^https://discord\.com/api/webhooks/.*")) {
+        WebhookEnabled.Value := false
+        WebhookURLBox.Value := ""
+        MsgBox("Invalid Webhook URL! Please ensure it follows the correct format.", "Invalid URL", "+0x1000")
+        return
+    }
+}
+
+ValidateEditBox(ctrl) {
+    val := Trim(ctrl.Value)
+    ; If the input is not a number, reset to 0
+    if !IsInteger(val)
+    {
+        ctrl.Value := "0"
+        return
+    }
+
+    ; Convert to integer
+    num := Integer(val)
+
+    if (num < 0)
+        ctrl.Value := "0"
+
+    if (ctrl == ZoomBox) {
+        if (num > 20)
+            ctrl.Value := "20"  ; Limit to a maximum of 20
+    }
+}
+
+HandleCoordinateClick(*) {
+    global waitingForClick, savedCoords, nukeCoords
+
+    if !waitingForClick
+        return
+
+    ; Handle special “Nuke” mode
+    if (WaitingFor("Nuke")) {
+        MouseGetPos(&x, &y)
+        nukeCoords := { x: x, y: y }
+        ToolTip("Nuke Coords Set", x + 10, y + 10)
+        AddToLog("Nuke Coords Saved → X: " x ", Y: " y)
+        SetTimer(ClearToolTip, -1000)
+        RemoveWaiting()
+        return
+    }
+
+    ; Normal placement coordinate capture
+    mode := ModeDropdown.Text
+    mapName := (mode = "Event") ? EventDropdown.Text : CustomPlacementMapDropdown.Text
+    if (mapName = "") {
+        AddToLog("⚠️ No map selected.")
+        return
+    }
+
+    MouseGetPos(&x, &y)
+    coords := GetOrInitCustomCoords(mapName)
+    coords.Push({ x: x, y: y, mapName: mapName })
+    savedCoords[mapName] := coords
+
+    ToolTip("Coords Set: " coords.Length, x + 10, y + 10)
+    AddToLog("📌 [Map: " mapName "] Saved → X: " x ", Y: " y " | Total: " coords.Length)
+    SetTimer(ClearToolTip, -1000)
+}
+
+StopCoordinateCapture(*) {
+    global waitingForClick, activeHotkeys
+
+    if !waitingForClick
+        return
+
+    waitingForClick := false
+
+    ; Remove all dynamically created hotkeys
+    for hk in activeHotkeys {
+        try hk.Delete()
+    }
+
+    activeHotkeys := []
+
+    SetTimer(UpdateTooltip, 0)
+    SetTimer(ClearToolTip, -500)
+    AddToLog("✅ Coordinate capture stopped.")
+}
