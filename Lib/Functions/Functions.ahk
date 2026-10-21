@@ -33,7 +33,7 @@ getCurrentTime() {
 
 OnModeChange(*) {
     ; Hide all
-    for ctrl in [StoryDropdown, StoryActDropdown, InfinityCastleDropdown, LegendDropDown, LegendActDropdown, RaidDropdown, RaidActDropdown, PortalDropdown, PortalRoleDropdown, EventDropdown, ContractJoinDropdown, ContractPageDropdown]
+    for ctrl in [StoryDropdown, StoryActDropdown, InfinityCastleDropdown, LegendDropDown, LegendActDropdown, RaidDropdown, RaidActDropdown, PortalDropdown, PortalRoleDropdown, EventDropdown, ContractJoinDropdown, ContractPageDropdown, PhysicalTeamText, PhysicalTeam, MagicTeamText, MagicTeam, TeamSwap]
         ctrl.Visible := false
 
     if (ActiveControlGroup = "Mode") {
@@ -55,13 +55,15 @@ OnModeChange(*) {
         case "Story":
             StoryDropdown.Visible := true
             StoryActDropdown.Visible := true
-        case "Legend":
+        case "Legend Stages":
             LegendDropDown.Visible := true
             LegendActDropdown.Visible := true
         case "Raid":
             RaidDropdown.Visible := RaidActDropdown.Visible := true
         case "Portal":
             PortalDropdown.Visible := PortalRoleDropdown.Visible := true
+        case "Infinity Castle":
+            InfinityCastleDropdown.Visible := true
         case "Custom":
             ; Add handling if needed
     }
@@ -98,11 +100,30 @@ OnEventChange(*) {
 }
 
 OnLegendChange(*) {
-    if (LegendDropDown.Text != "") {
+    selected := LegendDropDown.Text
 
-    } else {
-
+    if (selected = "") {
+        ; Clear the act dropdown when no stage is selected
+        LegendActDropdown.Delete()
+        return
     }
+
+    ; Get how many acts this stage supports (default to 6 if not listed)
+    maxActs := LegendMaxActs.Has(selected) ? LegendMaxActs[selected] : 6
+
+    ; Rebuild the Act dropdown
+    LegendActDropdown.Delete()
+
+    ; Add only the acts that this stage actually has
+    loop maxActs {
+        LegendActDropdown.Add(["Act " A_Index])
+    }
+
+    ; Optional: always include Random if you want them
+    LegendActDropdown.Add(["Random"])
+
+    ; Select the first real act by default
+    LegendActDropdown.Choose(1)
 }
 
 OnRaidChange(*) {
@@ -138,7 +159,7 @@ OnConfirmClick(*) {
             else
                 AddToLog("Selected " StoryDropdown.Text)
 
-        case "Legend":
+        case "Legend Stages":
             if (LegendDropDown.Text = "")
                 missing := "both Legend Stage and Act"
             else
@@ -163,7 +184,7 @@ OnConfirmClick(*) {
     }
 
     ; Hide all dropdowns and confirm button
-    for ctrl in [ModeDropdown, ContractJoinDropdown, ContractPageDropdown, StoryDropdown, StoryActDropdown, LegendDropDown,
+    for ctrl in [ModeDropdown, ContractJoinDropdown, ContractPageDropdown, InfinityCastleDropdown, StoryDropdown, StoryActDropdown, LegendDropDown, LegendActDropdown,
         RaidDropdown, RaidActDropdown, PortalDropdown,
         PortalRoleDropdown, EventDropdown, ConfirmButton, modeSelectionGroup] {
         ctrl.Visible := false
@@ -175,7 +196,6 @@ OnConfirmClick(*) {
 
     global confirmClicked := true
 }
-
 
 FixClick(x, y, LR := "Left", shouldWiggle := false) {
     MouseMove(x, y)
@@ -491,7 +511,7 @@ OnPriorityChange(type, priorityNumber, newPriorityNumber) {
 
 CheckForCardSelection() {
     if (ok := FT(&cardX, &cardY, 293, 152, 450, 213, 0, 0, pick_card)) {
-        SelectCardsByMode()
+        HandleCards()
         return true
     }
     return false
@@ -552,7 +572,7 @@ CheckUnitAbilities() {
         }
 
         if (CheckForCardSelection()) {
-            SelectCardsByMode()
+            HandleCards()
         }
 
         FixClick(coord.x, coord.y)
@@ -831,4 +851,19 @@ DetectMapImageSearch() { ;Imagesearch version
         Sleep 1000
         Reconnect()
     }
+}
+
+WaitAndCheck(ms) {
+    start := A_TickCount
+    while (A_TickCount - start < ms) {
+        if (ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel))
+            return false
+        Sleep(50)
+    }
+    return true
+}
+
+; Releases any held movement keys
+StopMovement() {
+    SendInput("{w up}{a up}{s up}{d up}")
 }

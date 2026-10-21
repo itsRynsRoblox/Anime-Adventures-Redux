@@ -1,588 +1,477 @@
 #Requires AutoHotkey v2.0
 
+; =============================================================================
+; CardManager.ahk  -  universal image-search (FT) card picker + priority GUI
+;
+; OpenCardPriorityPicker()           ; show the GUI for the current mode
+; SwitchCardMode("Halloween", true)  ; change mode and show its GUI
+; HandleCards()                      ; pick a card for the current mode
+; HandleCards("Halloween")           ; pick a card for a specific mode
+; =============================================================================
+global CardGUI := ""      ; priority picker GUI
+global dropDowns := []      ; dropdown controls, index = priority slot
+global priorityOrder := []      ; mirror of the active mode's order (GUI bookkeeping)
+global cardDebug := true   ; extra logging
+
+; Tier images per card, highest tier first. Names are variable NAMES (strings),
+global cardTierVars := Map(
+    "shield", ["shield"],
+    "speed", ["speed"],
+    "health", ["health"],
+    "regen", ["regen"],
+    "yen", ["yen"],
+    "range", ["range3", "range2", "range1"],
+    "cooldown", ["cooldown3", "cooldown2", "cooldown1"],
+    "attack", ["attack3", "attack2", "attack1"],
+    "explosive", ["explosive_death21", "explosive_death3"],
+    "resistant", ["resistant"],
+    "spellproof", ["spellproof"]
+)
+
+; =============================================================================
+; Mode registration / startup
+; =============================================================================
+
+; options : array of card keys in default priority order (keys must exist in textCards)
+; extra   : optional Map of overrides:
+;             "region"    [x1, y1, x2, y2] search area      (default [209,203,652,404])
+;             "pickDelay" ms to wait after picking          (default 5000)
+;             "tiers"     Map card -> array of tier var names (replaces cardTierVars)
+RegisterCardMode(modeName, options, extra := "") {
+    key := RegExReplace(modeName, "[^\w]", "")
+
+    cfg := Map(
+        "title", modeName " Cards",
+        "modeName", modeName,   ; must equal the key used in CardModeConfigs
+        "filePath", A_ScriptDir "\Settings\" key "CardPriority.txt",
+        "defaults", options.Clone(),
+        "options", options.Clone()
+    )
+
+    if IsObject(extra) {
+        for k, v in extra
+            cfg[k] := v
+    }
+
+    CardModeConfigs[modeName] := cfg
+}
+
+InitCardManager(defaultMode := "") {
+    LoadAllCardConfigs()
+
+    if (defaultMode = "") {
+        for name in CardModeConfigs {
+            defaultMode := name
+            break
+        }
+    }
+
+    if (defaultMode != "")
+        SwitchCardMode(defaultMode, false)
+}
+
+HasCards(modeName) {
+    return FindCardMode(modeName) != ""
+}
+
+SwitchCardMode(newMode, showGui := false) {
+    global currentCardMode, currentConfig, priorityOrder
+
+    found := FindCardMode(newMode)
+    if (found = "") {
+        AddToLog("Unknown card mode: " newMode)
+        return false
+    }
+    newMode := found
+
+    currentCardMode := newMode
+    currentConfig := CardModeConfigs[newMode]
+    LoadCardConfig(newMode)
+    priorityOrder := currentConfig["options"].Clone()
+
+    if (showGui) {
+        CreateCardPriorityGui(currentConfig)
+        CardGUI.Show()
+    }
+    return true
+}
+
+OpenCardPriorityPicker(modeName := "") {
+    if (modeName = "")
+        modeName := currentCardMode
+
+    if (modeName = "") {
+        AddToLog("No card mode selected.")
+        return
+    }
+    SwitchCardMode(modeName, true)
+}
+
+; =============================================================================
+; The card picker
+; =============================================================================
+
+SelectCardsByMode() {
+    if (currentCardMode != ModeDropdown.Text && ModeDropdown.Text != "") {
+        SwitchCardMode(ModeDropdown.Text)
+    }
+    HandleCards(currentCardMode)
+}
+
+HandleCards(modeName := "") {
+    if (modeName = "")
+        modeName := currentCardMode
+
+    found := FindCardMode(modeName)
+    if (found = "") {
+        keys := ""
+        for k in CardModeConfigs
+            keys .= "[" k "] "
+        AddToLog("No card config for [" modeName "] (len " StrLen(modeName) "). Registered: " (keys = "" ? "none" : keys))
+        return false
+    }
+    modeName := found
+    config := CardModeConfigs[modeName]
+    order := config["options"]
+    region := config.Has("region") ? config["region"] : [209, 203, 652, 404]
+    delay := config.Has("pickDelay") ? config["pickDelay"] : 5000
+    tiers := config.Has("tiers") ? config["tiers"] : cardTierVars
+    x1 := region[1], y1 := region[2], x2 := region[3], y2 := region[4]
+
+    AddToLog("Picking card in priority order (" modeName ")")
+
+    if (IsSet(UnitExistence) && FT(&X, &Y, 200, 239, 276, 270, 0, 0, UnitExistence)) {
+        FixClick(329, 184) ; close upg menu
+        Sleep(100)
+    }
+    FixClick(59, 572) ; untarget mouse
+    Sleep(100)
+
+    for index, card in order {
+        if (card = "" || !textCards.Has(card))
+            continue
+
+        if !FT(&cardX, &cardY, x1, y1, x2, y2, 0.20, 0.20, textCards.Get(card))
+            continue
+
+        ; Refine to the highest available tier
+        if tiers.Has(card) {
+            for tierVar in tiers[card] {
+                img := ResolveGlobal(tierVar)
+                if (img != "" && FT(&cardX, &cardY, x1, y1, x2, y2, 0, 0, img)) {
+                    tierText := RegExMatch(tierVar, "(\d+)$", &m) ? m[1] : tierVar
+                    break
+                }
+            }
+        }
+
+        FTClick(cardX, cardY, 0)
+        MouseMove(0, 10, 2, "R")
+        Click(2)
+        Sleep(1000)
+        MouseMove(0, 120, 2, "R")
+        Click(2)
+
+        msg := "Picked card: " card " (priority " index " of " order.Length ")"
+        AddToLog(msg)
+        Sleep(delay)
+        return true
+    }
+
+    AddToLog("Failed to pick a card")
+    return false
+}
+
+; =============================================================================
+; GUI
+; =============================================================================
+
 CreateCardPriorityGui(config) {
-    global CardGUI := Gui("+AlwaysOnTop")
+    global CardGUI, dropDowns
+
+    if IsObject(CardGUI) {
+        try CardGUI.Destroy()
+    }
+
+    CardGUI := Gui("+AlwaysOnTop")
     CardGUI.SetFont("s10 bold", "Segoe UI")
     CardGUI.BackColor := "0c000a"
     CardGUI.MarginX := 25
     CardGUI.MarginY := 20
     CardGUI.Title := config["title"]
+    ; Hide instead of destroy so Show() keeps working
+    CardGUI.OnEvent("Close", (*) => (CardGUI.Hide(), 1))
 
-    global dropDowns := []
-    global priorityOrder := []
+    dropDowns := []
+    modeName := config["modeName"]
+    options := config["options"]
 
     yStart := 50
     ySpacing := 28
 
-    loop config["options"].Length {
+    loop options.Length {
         yPos := yStart + ((A_Index - 1) * ySpacing)
         CardGUI.Add("Text", Format("x38 y{} w30 h17 +0x200 cWhite", yPos + 3), A_Index)
-        dropDown := CardGUI.Add("DropDownList", Format("x60 y{} w135", yPos), config["options"])
-        dropDowns.Push(dropDown)
-        AttachDropDownEvent(dropDown, A_Index, OnDropDownChange)
+        dd := CardGUI.Add("DropDownList", Format("x60 y{} w135 Choose{}", yPos, A_Index), options)
+        dd.OnEvent("Change", OnCardDropDownChange.Bind(A_Index))
+        dropDowns.Push(dd)
     }
 
-    groupBoxHeight := yStart + (config["options"].Length * ySpacing - 15)
-    CardGUI.Add("GroupBox", Format("x30 y25 w190 h{} cWhite +Center", groupBoxHeight), "Modifier Priority Order")
+    groupBoxHeight := yStart + (options.Length * ySpacing) - 15
+    CardGUI.Add("GroupBox", Format("x30 y25 w190 h{} cWhite +Center", groupBoxHeight), "Card Priority Order")
 
-    ; --- Import/Export Buttons at Bottom ---
-    imgY := groupBoxHeight + 40  ; adjust vertical spacing
-
-    importBtn := CardGUI.Add("Picture", Format("x85 y{} w27 h27", imgY), Import)
-    exportBtn := CardGUI.Add("Picture", Format("x135 y{} w27 h27", imgY), Export)
-
-    ; Optional: attach click handlers
-
-    importBtn.OnEvent("Click", (*) => ImportCardConfig(config["modeName"]))
-    exportBtn.OnEvent("Click", (*) => ExportCardConfig(config["modeName"]))
+    imgY := groupBoxHeight + 40
+    if (IsSet(Import) && IsSet(Export)) {
+        importBtn := CardGUI.Add("Picture", Format("x85 y{} w27 h27", imgY), Import)
+        exportBtn := CardGUI.Add("Picture", Format("x135 y{} w27 h27", imgY), Export)
+    } else {
+        importBtn := CardGUI.Add("Button", Format("x45 y{} w80 h27", imgY), "Import")
+        exportBtn := CardGUI.Add("Button", Format("x135 y{} w80 h27", imgY), "Export")
+    }
+    importBtn.OnEvent("Click", (*) => ImportCardConfig(modeName))
+    exportBtn.OnEvent("Click", (*) => ExportCardConfig(modeName))
 
     return CardGUI
 }
 
-
-OpenCardPriorityPicker() {
-    CardGUI.Show()
-}
-
-
-SelectCardsByMode() {
-    if (EventDropdown.Text = "Fool's Hunt") {
-        return SelectCards("Fool's Hunt")
-    }
-    return false
-}
-
-SelectCards(eventName) {
-    global cachedCardPriorities
-
-    eventName := StrReplace(eventName, " ", "")
-
-    if (!cachedCardPriorities.Has(eventName)) {
-        cardPriorityFile := A_ScriptDir "\Settings\" eventName "CardPriority.txt"
-        priorities := Map()
-
-        if (!FileExist(cardPriorityFile)) {
-            AddToLog("Error: " eventName "CardPriority.txt not found.")
-            return false
-        }
-
-        loop read, cardPriorityFile {
-            line := Trim(A_LoopReadLine)
-            if (line = "" || SubStr(line, 1, 1) = ";")
-                continue
-
-            parts := StrSplit(line, "=")
-            if (parts.Length = 2) {
-                cardName := Trim(parts[1])
-                priority := Integer(Trim(parts[2]))
-                if (priority > 0)
-                    priorities[cardName] := priority
-            }
-        }
-
-        if (priorities.Count = 0) {
-            AddToLog("No card priorities set in " eventName "CardPriority.txt.")
-            return false
-        }
-
-        cachedCardPriorities[eventName] := priorities
-    }
-
-    ; === Proper coords from old system ===
-    if (ok := FT(&X, &Y, 200, 239, 276, 270, 0, 0, UnitExistence)) {
-        FixClick(329, 184) ; close upg menu
-        Sleep(100)
-    }
-    FixClick(59, 572) ; Untarget Mouse
-    Sleep(100)
-
-    SendInput("Q") ; Close unit menu (extra safety)
-
-    cardPriorities := cachedCardPriorities[eventName]
-
-    ; === Updated card slots using the proven search region (209,203 → 652,404) ===
-    baseX := 209
-    baseY := 280          ; slightly lower than old top so OCR sits better on card text
-    scale := 1.0
-
-    cardSlots := [{ clickOffsetX: 55, clickOffsetY: 40, ocrOffsetX1: -10, ocrOffsetY1: -55, ocrWidth: 130, ocrHeight: 45 },  ; Card 1
-    { clickOffsetX: 170, clickOffsetY: 40, ocrOffsetX1: 105, ocrOffsetY1: -55, ocrWidth: 130, ocrHeight: 45 },  ; Card 2
-    { clickOffsetX: 285, clickOffsetY: 40, ocrOffsetX1: 220, ocrOffsetY1: -55, ocrWidth: 130, ocrHeight: 45 },  ; Card 3
-    { clickOffsetX: 400, clickOffsetY: 40, ocrOffsetX1: 335, ocrOffsetY1: -55, ocrWidth: 130, ocrHeight: 45 }]   ; Card 4]
-
-    for index, slot in cardSlots {
-        slot.clickX := baseX + slot.clickOffsetX * scale
-        slot.clickY := baseY + slot.clickOffsetY * scale
-        slot.ocrX1 := baseX + slot.ocrOffsetX1 * scale
-        slot.ocrY1 := baseY + slot.ocrOffsetY1 * scale
-        slot.ocrX2 := slot.ocrX1 + slot.ocrWidth * scale
-        slot.ocrY2 := slot.ocrY1 + slot.ocrHeight * scale
-    }
-
-    foundCards := Map()
-    for index, slot in cardSlots {
-        MouseMove(slot.clickX, slot.clickY)
-        Wiggle()
-
-        ; --- Adaptive OCR wait ---
-        maxAttempts := 3
-        interval := 50
-        attempts := 0
-        orcResult := ""
-        ocrCleaned := ""
-
-        while (attempts < maxAttempts) {
-            orcResult := ReadText(slot.ocrX1, slot.ocrY1, slot.ocrX2, slot.ocrY2, 10.0, false)
-            ocrCleaned := RegExReplace(orcResult, "\s+|!", "")
-            ocrCleaned := RegExReplace(ocrCleaned, "[^a-zA-Z]", "")
-            ocrCleaned := RegExReplace(ocrCleaned, "i)(IV|III|II|I)$", "")
-
-            if (ocrCleaned != "")
-                break
-
-            Sleep(interval)
-            attempts += 1
-            AddToLog("Waiting for card... attempt " attempts)
-        }
-
-        if (ocrCleaned != "") {
-            for cardName, priority in cardPriorities {
-                matchScore := 1.0 - (Levenshtein(ocrCleaned, cardName) / Max(StrLen(ocrCleaned), StrLen(cardName)))
-                if (matchScore >= 0.5) {
-                    foundCards[cardName] := { slot: slot, priority: priority }
-                    AddToLog("Found card '" cardName "' with priority " priority)
-                    if (debugMessages) {
-                        AddToLog("Exact or close match: OCR='" ocrCleaned "' matched with '" cardName "'")
-                    }
-                    break
-                }
-            }
-        }
-    }
-
-    if (foundCards.Count > 0) {
-        highestPriority := 999
-        bestCard := ""
-        for cardName, cardInfo in foundCards {
-            if (cardInfo.priority < highestPriority) {
-                highestPriority := cardInfo.priority
-                bestCard := cardName
-            }
-        }
-
-        if (bestCard != "") {
-            AddToLog("Selecting highest priority card: " bestCard)
-            slot := foundCards[bestCard].slot
-            FixClick(slot.clickX, slot.clickY)
-            Sleep(300)
-            FixClick(400, 395)          ; confirm (same as your old style)
-            return true
-        }
-    }
-
-    AddToLog("No cards found...")
-    return false
-}
-
-OCRFromFile(x1, y1, x2, y2, scale, keepImage := false) {
-    try {
-        WinGetPos(&winX, &winY, , , "ahk_exe RobloxPlayerBeta.exe")
-        x1 += winX
-        y1 += winY
-        x2 += winX
-        y2 += winY
-
-        pToken := Gdip_Startup()
-
-        width := x2 - x1
-        height := y2 - y1
-        pBitmap := Gdip_BitmapFromScreen(x1 "|" y1 "|" width "|" height)
-
-        newWidth := width * scale
-        newHeight := height * scale
-
-        pScaled := Gdip_CreateBitmap(newWidth, newHeight)
-        g := Gdip_GraphicsFromImage(pScaled)
-
-        Gdip_SetSmoothingMode(g, 4)
-        Gdip_SetInterpolationMode(g, 7)
-        Gdip_SetPixelOffsetMode(g, 5)
-
-        Gdip_DrawImage(g, pBitmap, 0, 0, newWidth, newHeight, 0, 0, width, height)
-
-        filename := "OCR"
-        dir := A_ScriptDir "\Images\"
-        fullPath := dir filename ".png"
-
-        if (keepImage) {
-            index := 1
-            while FileExist(fullPath) {
-                fullPath := dir filename "-" index ".png"
-                index++
-            }
-        } else {
-            if FileExist(fullPath)
-                FileDelete(fullPath)
-        }
-
-        Gdip_SaveBitmapToFile(pScaled, fullPath, 100)
-        
-        ; Wait up to 500ms for file to be ready
-        Loop 10 {
-            if FileExist(fullPath)
-                break
-            Sleep 50
-        }
-
-        if !FileExist(fullPath) {
-            AddToLog("Failed to save OCR image")
-            return ""
-        }
-
-        result := OCR.FromFile(fullPath, { grayscale: true, monochrome: 255})
-
-
-        Sleep 100
-
-        Gdip_DeleteGraphics(g)
-        Gdip_DisposeImage(pBitmap)
-        Gdip_DisposeImage(pScaled)
-        Gdip_Shutdown(pToken)
-
-        ; Only delete if keepImage is false
-        if !keepImage && FileExist(fullPath)
-            FileDelete(fullPath)
-
-        if IsObject(result) && result.Text {
-            finalText := RegExReplace(result.Text, "\s+", "")
-            return finalText
-        }
-        return ""
-    } catch as err {
-        AddToLog("OCR Error: " err.Message)
-        return ""
-    }
-}
-
-SaveNewCardConfigToFile(filePath) {
+; Bound as OnCardDropDownChange.Bind(index), so the event supplies (ctrl, info)
+OnCardDropDownChange(index, ctrl, *) {
     global priorityOrder
 
-    if !DirExist("Settings")
-        DirCreate("Settings")
-
-    file := FileOpen(filePath, "w", "UTF-8")
-    if !file {
-        AddToLog("Failed to save card configuration.")
+    if (!IsObject(currentConfig) || index > dropDowns.Length || index > priorityOrder.Length)
         return
+
+    newValue := ctrl.Text
+    oldValue := priorityOrder[index]
+    if (newValue = "" || newValue = oldValue)
+        return
+
+    ; If another slot already holds this card, swap it into our old slot
+    for i, dd in dropDowns {
+        if (i != index && dd.Text = newValue) {
+            dd.Text := oldValue
+            priorityOrder[i] := oldValue
+        }
     }
+    priorityOrder[index] := newValue
 
-    file.WriteLine("[CardPriority]")
-
-    for index, card in priorityOrder {
-        if card != ""
-            file.WriteLine(Format("{}={}", card, index))
-    }
-
-    file.Close()
-
-    if (debugMessages)
-        AddToLog("Card configuration saved to: " filePath)
+    currentConfig["options"] := priorityOrder.Clone()
+    SaveCardConfig(currentConfig["modeName"])
+    AddToLog(Format("Priority {} set to {}", index, newValue))
 }
 
-LoadNewCardConfigFromFile(filePath) {
-    global dropDowns, currentConfig, priorityOrder
-
-    config := currentConfig
-
-    if !FileExist(filePath) {
-        AddToLog("No configuration file found for this mode. Creating new one.")
-        priorityOrder := config["options"].Clone()
-        SaveNewCardConfigToFile(filePath)
+; Push the active mode's options into the dropdowns (after import/load)
+SyncCardGuiFromConfig() {
+    global priorityOrder
+    if (!IsObject(CardGUI) || !IsObject(currentConfig))
         return
+
+    options := currentConfig["options"]
+    priorityOrder := options.Clone()
+    for i, dd in dropDowns {
+        if (i <= options.Length)
+            dd.Text := options[i]
+    }
+}
+
+; =============================================================================
+; Config files:  Settings\<Mode>CardPriority.txt   ([CardPriority] / card=slot)
+; =============================================================================
+
+RegisterAllCardModes() {
+    tiers := Map(
+        "shield", ["shield"],
+        "speed", ["speed"],
+        "health", ["health1", "health"],
+        "regen", ["regen"],
+        "range", ["range3", "range2", "range1"],
+        "cooldown", ["cooldown3", "cooldown2", "cooldown1"],
+        "attack", ["attack3", "attack2", "attack1"],
+        "yen", ["yen"],
+        "explosive", ["explosive_death21", "explosive_death3"],
+        "resistant", ["resistant"],
+        "spellproof", ["spellproof"],
+        "plated", ["plated"]
+    )
+
+    RegisterCardMode("Default", ["shield", "regen", "health", "speed", "yen", "range", "cooldown", "attack", "explosive", "resistant", "spellproof"])
+    RegisterCardMode("Fool's Hunt", ["shield", "regen", "health", "speed", "yen", "range", "cooldown", "attack", "explosive", "resistant", "spellproof", "plated"], Map("tiers", tiers))
+}
+
+LoadAllCardConfigs() {
+    for modeName, config in CardModeConfigs {
+        if (config.Has("loaded") && config["loaded"])
+            continue
+
+        if LoadCardConfig(modeName) {
+        } else {
+            SaveCardConfig(modeName)
+        }
+        config["loaded"] := true
+    }
+}
+
+SaveAllCardConfigs() {
+    for modeName in CardModeConfigs
+        SaveCardConfig(modeName)
+}
+
+LoadCardConfig(modeName) {
+    config := CardModeConfigs[modeName]
+    path := config["filePath"]
+
+    if !FileExist(path)
+        return false
+
+    loaded := ReadCardFile(path)
+    if (loaded.Length = 0)
+        return false
+
+    config["options"] := NormalizeOrder(loaded, config["defaults"])
+    return true
+}
+
+SaveCardConfig(modeName) {
+    config := CardModeConfigs[modeName]
+    ok := WriteCardFile(config["filePath"], config["options"])
+    return ok
+}
+
+ExportCardConfig(modeName) {
+    config := CardModeConfigs[modeName]
+    exportDir := A_ScriptDir "\Settings\Export"
+    fileName := RegExReplace(config["title"], "[^\w]", "")
+    filePath := exportDir "\" fileName ".txt"
+
+    if WriteCardFile(filePath, config["options"])
+        AddToLog("Card config exported: " filePath)
+    else
+        AddToLog("Failed to export card config")
+}
+
+ExportAllCardConfigs() {
+    for modeName in CardModeConfigs
+        ExportCardConfig(modeName)
+}
+
+ImportCardConfig(modeName) {
+    config := CardModeConfigs[modeName]
+
+    if IsObject(CardGUI)
+        CardGUI.Opt("-AlwaysOnTop")
+    Sleep(100)
+    selected := FileSelect(3, A_ScriptDir "\Settings\Export", "Select a card config file to import", "Text Documents (*.txt)")
+    if IsObject(CardGUI)
+        CardGUI.Opt("+AlwaysOnTop")
+
+    if (selected = "") {
+        AddToLog("Import cancelled.")
+        return false
     }
 
-    ; Initialize priorityOrder with blank slots
-    priorityOrder := []
-    Loop dropDowns.Length
-        priorityOrder.Push("")
+    loaded := ReadCardFile(selected)
+    if (loaded.Length = 0) {
+        AddToLog("No valid card data found in file.")
+        return false
+    }
 
-    file := FileOpen(filePath, "r", "UTF-8")
-    if !file {
-        AddToLog("Failed to open config file for reading.")
-        return
+    config["options"] := NormalizeOrder(loaded, config["defaults"])
+    SaveCardConfig(modeName)
+
+    if (modeName = currentCardMode)
+        SyncCardGuiFromConfig()
+
+    AddToLog("Imported card config for mode: " modeName)
+    return true
+}
+
+; Returns an array of card names ordered by their saved slot number
+ReadCardFile(path) {
+    entries := []
+
+    try {
+        content := FileRead(path, "UTF-8")
+    } catch {
+        return []
     }
 
     section := ""
-    while !file.AtEOF {
-        line := file.ReadLine()
+    for line in StrSplit(content, "`n", "`r") {
+        line := Trim(line)
+        if (line = "" || SubStr(line, 1, 1) = ";")
+            continue
 
-        if RegExMatch(line, "^\[(.*)\]$", &match) {
-            section := match.1
+        if RegExMatch(line, "^\[(.*)\]$", &m) {
+            section := m[1]
             continue
         }
 
-        if (section = "CardPriority") {
-            if RegExMatch(line, "^(.+)=(\d+)$", &match) {
-                card := match.1
-                slot := match.2 + 0
-
-                if (slot >= 1 && slot <= dropDowns.Length && ArrayHasValue(config["options"], card)) {
-                    dropDowns[slot].Text := card
-                    priorityOrder[slot] := card
-                }
-            }
-        }
+        if (section = "CardPriority" && RegExMatch(line, "^(.+?)\s*=\s*(\d+)$", &m2))
+            entries.Push({ name: Trim(m2[1]), priority: Integer(m2[2]) })
     }
 
-    file.Close()
+    SortByPriority(entries)
 
-    if (debugMessages) {
-        AddToLog("Card configuration loaded from: " filePath)
-    }
+    names := []
+    for e in entries
+        names.Push(e.name)
+    return names
 }
 
-SwitchCardMode(newMode) {
-    global currentCardMode := newMode
-    global currentConfig := CardModeConfigs[newMode]
-
-    if CardGUI {
-        CardGUI.Destroy()
-    }
-
-    CreateCardPriorityGui(currentConfig)
-
-    if FileExist(currentConfig["filePath"]) {
-        LoadNewCardConfigFromFile(currentConfig["filePath"])
-    } else {
-        priorityOrder := currentConfig["options"].Clone()
-        SaveNewCardConfigToFile(currentConfig["filePath"])
-    }
-    OpenCardPriorityPicker()
-}
-
-
-SaveAllConfigs() {
-    global CardModeConfigs
-
-    for modeName, config in CardModeConfigs {
-        directory := "Settings"
-        if !DirExist(directory)
-            DirCreate(directory)
-
-        file := FileOpen(config["filePath"], "w")
-        if !file {
-            AddToLog("Failed to save config for " modeName)
-            continue
-        }
-
-        file.WriteLine("[CardPriority]")
-        for index, cardName in config["options"] {
-            file.WriteLine(Format("{}={}", cardName, index))
-        }
-        file.Close()
-    }
-}
-
-LoadAllCardConfig() {
-    global CardModeConfigs
-
-    allMsg := ""  ; Accumulate messages here
-
-    for modeName, currentConfig in CardModeConfigs {
-        filePath := currentConfig["filePath"]
-
-        if !FileExist(filePath) {
-            continue
-        }
-
-        file := FileOpen(filePath, "r")
-        if !file {
-            allMsg .= "Failed to open config file for " modeName "`n"
-            continue
-        }
-
-        local loadedOptions := []  ; Will store objects {name:, priority:}
-        section := ""
-
-        while !file.AtEOF {
-            line := Trim(file.ReadLine())
-
-            if (line = "" || SubStr(line, 1, 1) = ";")
-                continue
-
-            if RegExMatch(line, "^\[(.*)\]$", &match) {
-                section := match.1
-                continue
-            }
-
-            if (section = "CardPriority") {
-                if RegExMatch(line, "(.+?)=(\d+)", &match) {
-                    cardName := match.1
-                    priority := match.2 + 0
-                    loadedOptions.Push({ name: cardName, priority: priority })
-                    allMsg .= modeName " - Card: " cardName " | Priority: " priority "`n"
-                }
-            }
-        }
-
-        file.Close()
-
-        if (loadedOptions.Length > 0) {
-            ; Manual sort by priority
-            for i, outer in loadedOptions {
-                for j, inner in loadedOptions {
-                    if (i < j && outer.priority > inner.priority) {
-                        temp := loadedOptions[i]
-                        loadedOptions[i] := loadedOptions[j]
-                        loadedOptions[j] := temp
-                    }
-                }
-            }
-
-            ; Extract just the names in sorted order
-            namesSorted := []
-            for card in loadedOptions
-                namesSorted.Push(card.name)
-
-            currentConfig["options"] := namesSorted
-        }
-    }
-
-    ; Show all cards and priorities at once
-    if (allMsg != "" && debugMessages)
-        MsgBox(allMsg, "Loaded Card Priorities")
-}
-
-; === Helper Functions ===
-
-OnDropDownChange(ctrl, index) {
-    if (index >= 0 && index <= dropDowns.Length) {
-        newPriority := ctrl.Text
-        used := Map()
-        originalOptions := currentConfig["options"].Clone()
-
-        ; First, collect all selected options (after change)
-        for i, dropdown in dropDowns {
-            if (i == index) {
-                used[newPriority] := i  ; new value just selected
-            } else {
-                used[dropdown.Text] := i
-            }
-        }
-
-        ; Find missing option(s)
-        missing := []
-        for _, opt in originalOptions {
-            if !used.Has(opt) {
-                missing.Push(opt)
-            }
-        }
-
-        ; Check for duplicates and fix them
-        for i, dropdown in dropDowns {
-            if (i != index && dropdown.Text = newPriority) {
-                if (missing.Length > 0) {
-                    replacement := missing.Pop()
-                    dropdown.Text := replacement
-                    if (debugMessages) {
-                        AddToLog(Format("Card '{}' replaced with '{}'", newPriority, replacement))
-                    }
-                } else {
-                    AddToLog("Warning: No available replacement for duplicate value.")
-                }
-            }
-        }
-
-        ; Update options based on new dropdown states
-        for i, dropdown in dropDowns {
-            currentConfig["options"][i] := dropdown.Text
-        }
-
-        AddToLog(Format("Priority {} set to {}", index, newPriority))
-        RemoveEmptyStrings(priorityOrder)
-        SaveNewCardConfigToFile(currentConfig["filePath"])
-    } else {
-        if (debugMessages) {
-            AddToLog(Format("Invalid index {} for dropdown", index))
-        }
-    }
-}
-
-AttachDropDownEvent(dropDown, index, callback) {
-    dropDown.OnEvent("Change", (*) => callback(dropDown, index))
-}
-
-RemoveEmptyStrings(array) {
-    loop array.Length {
-        i := array.Length - A_Index + 1
-        if (array[i] = "") {
-            array.RemoveAt(i)
-        }
-    }
-}
-
-Levenshtein(s1, s2) { ; Used to compare OCR results to card names
-    len1 := StrLen(s1)
-    len2 := StrLen(s2)
-
-    ; Create a 2D array (1-based)
-    matrix := []
-
-    ; Initialize matrix
-    Loop len1 + 1 {
-        matrixRow := []
-        Loop len2 + 1 {
-            matrixRow.Push(0)
-        }
-        matrix.Push(matrixRow)
-    }
-
-    ; Fill first row and first column
-    Loop len1 + 1
-        matrix[A_Index][1] := A_Index - 1
-    Loop len2 + 1
-        matrix[1][A_Index] := A_Index - 1
-
-    ; Calculate distances
-    Loop len1 {
-        i := A_Index
-        char1 := SubStr(s1, i, 1)
-        Loop len2 {
-            j := A_Index
-            char2 := SubStr(s2, j, 1)
-            cost := (char1 = char2) ? 0 : 1
-
-            above := matrix[i][j + 1]
-            left := matrix[i + 1][j]
-            diag := matrix[i][j]
-
-            matrix[i + 1][j + 1] := Min(above + 1, left + 1, diag + cost)
-        }
-    }
-
-    return matrix[len1 + 1][len2 + 1]
-}
-
-DetectText(x1, y1, x2, y2) {
-    AddToLog("Checking for text...")
-
-    x := x1
-    y := y1
-    w := x2 - x1
-    h := y2 - y1
-
+WriteCardFile(path, options) {
     try {
-        result := OCR.FromRect(x, y, w, h, { grayscale: true, scale: 10.0 })
-        
-        if result {
-            ; Clean the number string
-            number := RegExReplace(number, "\\s+|!", "")
-            AddToLog("Sending number: " number)
-            return number
+        SplitPath(path, , &dir)
+        if !DirExist(dir)
+            DirCreate(dir)
+
+        f := FileOpen(path, "w", "UTF-8-RAW")
+        f.WriteLine("[CardPriority]")
+        for index, name in options
+            f.WriteLine(name "=" index)
+        f.Close()
+        return true
+    } catch as err {
+        AddToLog("Card config write failed: " err.Message)
+        return false
+    }
+}
+
+NormalizeOrder(loaded, defaults) {
+    result := []
+
+    for name in loaded {
+        for def in defaults {
+            if (def = name && !ArrayHasValue(result, def)) {
+                result.Push(def)
+                break
+            }
         }
-    } 
-    AddToLog("Could not detect any text.")
-    return false
+    }
+
+    for def in defaults {
+        if !ArrayHasValue(result, def)
+            result.Push(def)
+    }
+    return result
+}
+
+; =============================================================================
+; Helpers
+; =============================================================================
+
+SortByPriority(entries) {
+    n := entries.Length
+    loop n - 1 {
+        i := A_Index
+        loop n - i {
+            j := A_Index
+            if (entries[j].priority > entries[j + 1].priority) {
+                tmp := entries[j]
+                entries[j] := entries[j + 1]
+                entries[j + 1] := tmp
+            }
+        }
+    }
 }
 
 ArrayHasValue(arr, val) {
@@ -593,224 +482,161 @@ ArrayHasValue(arr, val) {
     return false
 }
 
-ExportCardConfig(modeName) {
-    global CardModeConfigs, dropDowns
+; Read a global variable by name; "" if it doesn't exist / isn't set
+ResolveGlobal(varName) {
+    try {
+        return %varName%
+    }
+    return ""
+}
 
+LogPriorityOrder() {
+    if !IsObject(currentConfig)
+        return
+    text := ""
+    for index, card in currentConfig["options"]
+        text .= (index = 1 ? "" : ", ") card
+    AddToLog("Current Priority Order (" currentCardMode "): " text)
+}
+
+ShowOCRRegions(duration := 5000) {
+    winTitle := "ahk_exe RobloxPlayerBeta.exe"   ; change to match your game window
+
+    if (!WinExist(winTitle)) {
+        MsgBox("Game window not found: " winTitle)
+        return
+    }
+    WinGetClientPos(&offX, &offY, , , winTitle)   ; client area's top-left on screen
+
+    ; Client coords from the region picker: [x1, y1, x2, y2]
+    regions := [
+        [191, 227, 318, 258],  ; Card 1
+        [336, 230, 463, 258],  ; Card 2
+        [481, 229, 609, 255]   ; Card 3
+        ; [x1, y1, x2, y2]     ; Card 4 (add later)
+    ]
+
+    allGuis := []
+    thick := 2
+
+    for r in regions {
+        x1 := r[1] + offX
+        y1 := r[2] + offY
+        x2 := r[3] + offX
+        y2 := r[4] + offY
+
+        edges := [[x1, y1, x2 - x1, thick],           ; top
+        [x1, y2 - thick, x2 - x1, thick],   ; bottom
+        [x1, y1, thick, y2 - y1],           ; left
+        [x2 - thick, y1, thick, y2 - y1]]   ; right
+
+        for e in edges {
+            g := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")  ; click-through
+            g.BackColor := "Red"
+            g.Show("x" e[1] " y" e[2] " w" e[3] " h" e[4] " NoActivate")
+            allGuis.Push(g)
+        }
+    }
+
+    Cleanup() {
+        for g in allGuis
+            g.Destroy()
+    }
+    SetTimer(Cleanup, -duration)
+}
+
+NormalizeModeName(name) {
+    return StrLower(RegExReplace(name, "[^\w]", ""))
+}
+
+; Returns the registered key matching name (ignoring case, spaces, punctuation), or ""
+FindCardMode(name) {
+    if CardModeConfigs.Has(name)
+        return name
+    wanted := NormalizeModeName(name)
+    for key in CardModeConfigs {
+        if (NormalizeModeName(key) = wanted)
+            return key
+    }
+    return ""
+}
+
+SetupCardManager() {
+    RegisterAllCardModes()          ; the function from my last message
+    InitCardManager("Default")  ; loads saved files, sets the active mode
+    LoadAllCardConfigs()          ; ensure all modes have a config file
+}
+
+; Detects which cards are on screen without picking anything.
+;   modeName : mode to check (default: active mode)
+;   report   : ByRef, filled with one line per card
+;   scanAll  : true = test EVERY key in textCards, not just this mode's cards
+; Returns the number of cards found.
+CheckForActiveCards(modeName := "", &report := "", scanAll := false) {
+    report := ""
+    if (modeName = "")
+        modeName := currentCardMode
+
+    found := FindCardMode(modeName)
+    if (found = "") {
+        report := "Unknown card mode: [" modeName "]`n"
+        return 0
+    }
+    modeName := found
     config := CardModeConfigs[modeName]
 
-    modeName := StrReplace(config["title"], " ", "")
+    region := config.Has("region") ? config["region"] : [209, 203, 652, 404]
+    tiers := config.Has("tiers") ? config["tiers"] : cardTierVars
+    images := config.Has("images") ? config["images"] : textCards
+    x1 := region[1], y1 := region[2], x2 := region[3], y2 := region[4]
 
-
-    if !config {
-        AddToLog("❌ No card config found for mode: " modeName)
-        return
+    ; Which cards to test
+    cards := []
+    if (scanAll) {
+        for key in images
+            cards.Push(key)
+    } else {
+        cards := config["options"]
     }
 
-    exportDir := A_ScriptDir "\Settings\Export"
-    if !DirExist(exportDir)
-        DirCreate(exportDir)
+    report .= "Mode: " modeName " (" (scanAll ? "all cards" : "priority list") ")`n"
 
-    filePath := exportDir "\" modeName ".txt"
-
-    try {
-        if FileExist(filePath)
-            FileDelete(filePath)
-
-        ; Write the card priority in [CardPriority] section
-        cardData := "[CardPriority]`n"
-
-        for index, dd in dropDowns {
-            selected := dd.Text
-            if selected != ""
-                cardData .= selected "=" index "`n"
-        }
-
-        FileAppend(cardData, filePath)
-        AddToLog("✅ Card config successfully exported!")
-    } catch {
-        AddToLog("❌ Failed to export card config")
-    }
-}
-
-ImportCardConfig(modeName) {
-    global CardModeConfigs, dropDowns
-
-    config := CardModeConfigs[modeName]
-    if !config {
-        AddToLog("❌ No config found for mode: " modeName)
-        return
-    }
-
-    ; Disable AlwaysOnTop temporarily for file dialog
-    MainUI.Opt("-AlwaysOnTop")
-    Sleep(100)
-
-    selectedFile := FileSelect(3, , "Select a card config file to import", "Text Documents (*.txt)")
-
-    MainUI.Opt("+AlwaysOnTop")
-
-    if !selectedFile {
-        AddToLog("⚠️ Import cancelled by user.")
-        return
-    }
-
-    ; Read selected file
-    content := FileRead(selectedFile)
-    lines := StrSplit(content, "`n")
-
-    loadedOptions := []
-    section := ""
-
-    for line in lines {
-        line := Trim(line)
-        if (line = "" || SubStr(line, 1, 1) = ";")
+    activeCount := 0
+    for index, card in cards {
+        if (card = "")
             continue
+        label := scanAll ? card : "[" index "] " card
 
-        if RegExMatch(line, "^\[(.*)\]$", &match) {
-            section := match.1
+        if !images.Has(card) {
+            report .= "  " label ": NO IMAGE (missing from textCards)`n"
             continue
         }
 
-        if (section = "CardPriority") {
-            if RegExMatch(line, "(.+?)=(\d+)", &match) {
-                cardName := match.1
-                loadedOptions.Push(cardName)
-            }
-        }
-    }
-
-    if (loadedOptions.Length = 0) {
-        AddToLog("⚠️ No valid card data found in file.")
-        return
-    }
-
-    ; Overwrite the existing file for this mode
-    targetFile := A_ScriptDir "\" config["filePath"]
-
-    try {
-        if FileExist(targetFile) {
-            FileDelete(targetFile)
-        }
-    } catch as e {
-        AddToLog("❌ Failed to delete file: " targetFile "`nError: " e.Message)
-    }
-
-    try {
-        FileAppend("[CardPriority]`n", targetFile)
-        for index, name in loadedOptions {
-            FileAppend(name "=" index "`n", targetFile)
+        if !FT(&cx, &cy, x1, y1, x2, y2, 0.20, 0.20, images.Get(card)) {
+            if (!scanAll)
+                report .= "  " label ": not on screen`n"
+            continue
         }
 
-        config["options"] := loadedOptions
-        AddToLog("✅ Imported and replaced card config for mode: " modeName)
-        SaveNewCardConfigToFile(modeName)
-
-        ; Update all the dropdowns
-        for index, dd in dropDowns {
-            dd.Text := loadedOptions[index]
-        }
-    } catch as e {
-        AddToLog("❌ Failed to write new card config: " e.Message)
+        activeCount++
+        tierText := DetectCardTier(card, tiers, x1, y1, x2, y2)
+        report .= "  " label ": FOUND at " cx "," cy (tierText != "" ? " (tier " tierText ")" : "") "`n"
     }
+
+    report .= activeCount " card(s) detected`n"
+    return activeCount
 }
 
-ExportAllCardConfigs() {
-    global CardModeConfigs
+; Looks for the highest tier of a card. Returns "" if the card has no tiers,
+; "not detected" if it has tiers but none matched, else the tier number.
+DetectCardTier(card, tiers, x1, y1, x2, y2) {
+    if !tiers.Has(card)
+        return ""
 
-    for modeName, config in CardModeConfigs {
-        ExportCardConfig(modeName)
+    for tierVar in tiers[card] {
+        img := ResolveGlobal(tierVar)
+        if (img != "" && FT(&tx, &ty, x1, y1, x2, y2, 0, 0, img))
+            return RegExMatch(tierVar, "(\d+)$", &m) ? m[1] : tierVar
     }
-}
-
-HasCards(ModeName) {
-    ; Array of modes that have card selection
-    static modesWithCards := ["Boss Rush", "Halloween", "Halloween P2"]
-
-    ; Check if current mode is in the array
-    for mode in modesWithCards {
-        if (mode = ModeName)
-            return true
-    }
-    return false
-}
-
-GetCardSlotsByWave(wave) {
-    wave := Integer(wave)
-    baseX := 169
-    baseY := 305
-    scale := 1.0
-
-    if (wave <= 10) {
-        ; Early waves — 4 cards
-        cardSlots := [
-            { clickOffsetX: 0,   clickOffsetY: -15,   ocrOffsetX1: -69, ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 },
-            { clickOffsetX: 159, clickOffsetY: -15, ocrOffsetX1: 87,  ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 },
-            { clickOffsetX: 317, clickOffsetY: -15, ocrOffsetX1: 241, ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 },
-            { clickOffsetX: 473, clickOffsetY: -15, ocrOffsetX1: 402, ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 }
-        ]
-    }
-    else if (wave <= 40) {
-        ; Mid waves — 3 cards (shifted slightly toward center)
-        baseX := 200
-        cardSlots := [
-            { clickOffsetX: 0,   clickOffsetY: -15,   ocrOffsetX1: -69, ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 },
-            { clickOffsetX: 159, clickOffsetY: -15, ocrOffsetX1: 100,  ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 },
-            { clickOffsetX: 317, clickOffsetY: -15, ocrOffsetX1: 300, ocrOffsetY1: -91, ocrWidth: 140, ocrHeight: 50 }
-        ]
-    }
-    else if (wave <= 50) {
-        ; Late waves — only 2 cards (further centered)
-        baseX := 240
-        cardSlots := [
-            { clickOffsetX: 0,   clickOffsetY: 0,   ocrOffsetX1: -70, ocrOffsetY1: -91, ocrWidth: 138, ocrHeight: 50 },
-            { clickOffsetX: 265, clickOffsetY: -10, ocrOffsetX1: 200, ocrOffsetY1: -91, ocrWidth: 138, ocrHeight: 50 }
-        ]
-    }
-
-    ; Calculate actual positions
-    for index, slot in cardSlots {
-        slot.clickX := baseX + slot.clickOffsetX * scale
-        slot.clickY := baseY + slot.clickOffsetY * scale
-        slot.ocrX1 := baseX + slot.ocrOffsetX1 * scale
-        slot.ocrY1 := baseY + slot.ocrOffsetY1 * scale
-        slot.ocrX2 := slot.ocrX1 + slot.ocrWidth * scale
-        slot.ocrY2 := slot.ocrY1 + slot.ocrHeight * scale
-    }
-    return cardSlots
-}
-
-ShowRegions(cardSlots, showClicks := true) {
-    static overlays := []  ; persists between calls
-
-    ; destroy previous overlays
-    if IsObject(overlays) {
-        for g in overlays
-            try g.Destroy()
-    }
-    overlays := []
-
-    for index, slot in cardSlots {
-        w := slot.ocrX2 - slot.ocrX1
-        h := slot.ocrY2 - slot.ocrY1
-
-        ; OCR box (red)
-        ocrGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20") ; create new Gui
-        ocrGui.BackColor := "Red"
-        ocrGui.Show("x" slot.ocrX1 " y" slot.ocrY1 " w" w " h" h)
-        overlays.Push(ocrGui)
-
-        if showClicks {
-            cx := slot.clickX - 6  ; center marker (12x12)
-            cy := slot.clickY - 6
-
-            ; Click marker (blue)
-            clickGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20") ; <-- correct: Gui(), not ocrGui(...)
-            clickGui.BackColor := "Blue"
-            clickGui.Show("x" cx " y" cy " w12 h12")
-            overlays.Push(clickGui)
-        }
-    }
-
-    ; store overlays so HideRegions can access them
-    ShowRegions._overlays := overlays
+    return "not detected"
 }

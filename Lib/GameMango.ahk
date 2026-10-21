@@ -16,7 +16,7 @@ F5:: {
 }
 
 F6:: {
-
+    HandleEndScreen(false)
 }
 
 F7:: {
@@ -90,11 +90,15 @@ CustomMode() {
 }
 
 HandleEndScreen(isVictory := true) {
+    if (inChallengeMode) {
+        ClickReturnToLobby()
+        CheckLobby()
+    }
     Switch ModeDropdown.Text {
         Case "Story":
             HandleStoryEnd()
         Case "Portal":
-            HandlePortalEnd(isVictory)
+            HandlePortalEnd()
         case "Custom":
             HandleCustomEnd()
         case "Contracts":
@@ -106,12 +110,9 @@ HandleEndScreen(isVictory := true) {
 
 HandleStoryEnd() {
     global lastResult
-    AddToLog("Handling Story mode end")
     if (NextLevelBox.Value && lastResult = "win") {
-        AddToLog("Next level")
         ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyIcon, +260, -35)
     } else {
-        AddToLog("Replay level")
         ClickReplay()
     }
     return RestartStage()
@@ -133,9 +134,15 @@ HandleCustomEnd() {
 }
 
 HandleDefaultEnd() {
-    AddToLog("[Game Over] Restarting stage")
-    ClickReplay()
-    return RestartStage()
+    if (!ReturnLobbyBox.Value) {
+        AddToLog("[Game Over] Replaying stage")
+        ClickReplay()
+        return RestartStage()
+    } else {
+        AddToLog("[Game Over] Returning to lobby")
+        ClickReturnToLobby()
+        CheckLobby()
+    }
 }
 
 MonitorStage() {
@@ -204,9 +211,6 @@ MonitorStage() {
         Sleep(1500)
     }
 
-    ; -------------------------------------------------
-    ; 6. WEBHOOK & STREAK (error-proof)
-    ; -------------------------------------------------
     if (WebhookEnabled.Value) {
         try {
             SendWebhookWithTime(result, stageLength)
@@ -231,44 +235,34 @@ ChallengeMovement() {
 }
 
 StartContent(mapName, actName, getMapFunc, getActFunc, mapScrollMousePos, actScrollMousePos) {
-    ;AddToLog("Selecting : " mapName " - " actName)
-
-    ; Get the map
     Map := getMapFunc.Call(mapName)
     if !Map {
         AddToLog("Error: Map '" mapName "' not found.")
         return false
     }
-
-    ; Scroll map if needed
     if Map.scrolls > 0 {
         AddToLog(Format("Scrolling down {} times for {}", Map.scrolls, mapName))
         MouseMove(mapScrollMousePos.x, mapScrollMousePos.y)
+        Sleep(50)
         Scroll(Map.scrolls, 'WheelDown', 250)
     }
-
     Sleep(1000)
     FixClick(Map.x, Map.y)
     Sleep(1000)
-
-    ; Get the act
     Act := getActFunc.Call(actName)
     if !Act {
         AddToLog("ERROR: Act '" actName "' not found.")
         return false
     }
-
-    ; Scroll act if needed
     if Act.scrolls > 0 {
         AddToLog(Format("Scrolling down {} times for {}", Act.scrolls, actName))
         MouseMove(actScrollMousePos.x, actScrollMousePos.y)
+        Sleep(50)
         Scroll(Act.scrolls, 'WheelDown', 250)
     }
-
     Sleep(1000)
     FixClick(Act.x, Act.y)
     Sleep(1000)
-
     return true
 }
 
@@ -277,6 +271,9 @@ PlayHere() {
     Sleep (500)
     FixClick(330, 325) ;Click Play here
     Sleep (1200)
+    if (ModeDropdown.Text = "Legend Stages" && LegendDropDown.Text = "Magic Hills" && LegendActDropdown.Text = "Act 3") {
+        Sleep (4000)
+    }
     ClickStartStory()
     Sleep (500)
 }
@@ -2017,6 +2014,8 @@ StartSelectedMode() {
     }
 
     switch (ModeDropdown.Text) {
+        case "Legend Stages":
+            StartLegendStage()
         case "Story":
             StartStoryMode()
         case "Raid":
@@ -2024,9 +2023,11 @@ StartSelectedMode() {
         case "Custom":
             CustomMode()
         case "Portal":
-            StartPortalMode()
+            StartPortal()
         case "Event":
             StartEvent()
+        case "Infinity Castle":
+            StartInfinityCastle()    
         case "Contracts":
             StartContracts()    
     }
@@ -2081,6 +2082,7 @@ ClickNextLevel() {
 ClickReturnToLobby() {
     ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, 0, -35, LobbyText2)
 }
+
 SetupForInfinite() {
     ChangeCameraMode("Follow")
     Sleep (1000)
@@ -2189,7 +2191,7 @@ HandleStartButton() {
 
 StartsInLobby(ModeName) {
     ; Array of modes that usually start in lobby
-    static modes := ["Story", "Raid", "Challenge", "Infinity Castle", "Portal", "Event"]
+    static modes := ["Story", "Raid", "Challenge", "Infinity Castle", "Portal", "Legend Stages", "Event"]
     
     ; Special case: If PortalLobby.Value is set, don't start in lobby for "Portal"
     if (ModeName = "Portal" && !PortalLobby.Value)

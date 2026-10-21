@@ -17,7 +17,16 @@ StartStoryMode() {
 
     AddToLog("Starting " currentStoryMap " - " currentStoryAct)
     StartStory(currentStoryMap, currentStoryAct)
-    PlayHere()
+    ; Handle play mode selection
+    if (StoryActDropdown.Text != "Infinity") {
+        PlayHere()
+    } else {
+        if (MatchMaking.Value) {
+            FindMatch()
+        } else {
+            PlayHere()
+        }
+    }
     RestartStage()
 }
 
@@ -31,18 +40,35 @@ ClickStartStory() {
 
 StoryMovement() {
     FixClick(85, 295)
-    Sleep (1000)
-    SendInput ("{w down}")
-    Sleep(300)
-    SendInput ("{w up}")
-    Sleep(300)
-    SendInput ("{d down}")
-    SendInput ("{w down}")
-    Sleep(4500)
-    SendInput ("{d up}")
-    SendInput ("{w up}")
-    Sleep(500)
+    if !WaitAndCheck(1000)
+        return false
 
+    SendInput("{w down}")
+    if !WaitAndCheck(300) {
+        StopMovement()
+        return false
+    }
+    SendInput("{w up}")
+
+    if !WaitAndCheck(300) {
+        StopMovement()
+        return false
+    }
+
+    SendInput("{d down}{w down}")
+    if !WaitAndCheck(4500) {
+        StopMovement()
+        Sleep(250)
+        return false
+    }
+    SendInput("{d up}{w up}")
+
+    if !WaitAndCheck(500) {
+        StopMovement()
+        return false
+    }
+
+    return true
 }
 
 GetStoryMap(map) {

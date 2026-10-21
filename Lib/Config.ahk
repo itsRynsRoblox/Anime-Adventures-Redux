@@ -104,7 +104,7 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
         SaveAllMovements()
         SaveAllRecordings()
         SaveUniversalSettings()
-        SaveAllConfigs()
+        SaveAllCardConfigs()
     }
     catch {
         AddToLog("Error saving mode settings")
@@ -238,7 +238,7 @@ LoadUnitSettingsByMode(fromFile := false) {
     LoadUniversalSettings()
     LoadAllMovements()
     LoadAllRecordings()
-    LoadAllCardConfig()
+    SetupCardManager()
     LoadAllProfiles()
 
     AddToLog("✅ Settings successfully loaded for mode: " mode)
@@ -258,7 +258,7 @@ LoadUniversalSettings() {
 
     NextLevelBox.Value := GetValue(data, ["Universal", "NextLevel"], 0)
     ReturnLobbyBox.Value := GetValue(data, ["Universal", "ReturnToLobby"], 0)
-    MatchMaking.Value := GetValue(data, ["Universal", "MatchMaking"], 1)
+    MatchMaking.Value := GetValue(data, ["Universal", "Matchmaking"], 1)
     ModeConfigurations.Value := GetValue(data, ["Universal", "UsingModeConfigurations"], 0)
 
     WebhookEnabled.Value := GetValue(data, ["Webhook", "Enabled"], 0)

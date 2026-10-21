@@ -11,7 +11,7 @@
     "Universal": {
         "Matchmaking": 0,
         "NextLevel": 0,
-        "ReturnToLobby": 1,
+        "ReturnToLobby": 0,
         "UsingModeConfigurations": 0
     },
     "Webhook": {

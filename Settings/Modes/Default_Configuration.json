@@ -31,7 +31,7 @@
         "Slot_1_Upgrade_Limit_Enabled": 0,
         "Slot_1_Upgrade_Priority": "1",
         "Slot_2_Ability_Enabled": 0,
-        "Slot_2_Enabled": 1,
+        "Slot_2_Enabled": 0,
         "Slot_2_Placements": 1,
         "Slot_2_Priority": 2,
         "Slot_2_Upgrade_Enabled": 0,

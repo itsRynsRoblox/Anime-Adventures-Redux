@@ -29,8 +29,6 @@ global currentTime := GetCurrentTime()
 ; Config and Settings
 global UnitConfigMap := Map()
 ;Auto Challenge
-global challengeStartTime := A_TickCount
-global inChallengeMode := false
 global firstStartup := true
 ; Testing
 global waitingState := Map()
@@ -92,28 +90,34 @@ if !DirExist(A_ScriptDir "\Settings") {
 
 setupOutputFile()
 
-; === Need To Load These Before GUI ===
-global currentCardMode := "Fool's Hunt"
-global CardModeConfigs := Map(
-    "Fool's Hunt", Map(
-        "modeName", "Fool's Hunt",
-        "title", "Fool's Hunt Card Priority",
-        "filePath", "Settings\FoolsHuntCardPriority.txt",
-        "options", [
-            "Shield",
-            "Regen",
-            "Speed",
-            "Yen",
-            "Cooldown",
-            "Damage",
-        ]
-    )
-)
-
-global currentConfig := CardModeConfigs[currentCardMode]
+global CardModeConfigs := Map()   ; modeName -> config Map
+global currentCardMode := ""      ; active mode name
+global currentConfig := ""      ; active config Map (same object as in CardModeConfigs)
 
 global customDropdowns := [
-    "Custom"
+    "Custom",
+    "Planet Greenie",
+    "Walled City",
+    "Snowy Town",
+    "Sand Village",
+    "Navy Bay",
+    "Fiend City",
+    "Spirit World",
+    "Ant Kingdom",
+    "Magic Town",
+    "Haunted Academy",
+    "Magic Hills",
+    "Space Center",
+    "Alien Spaceship",
+    "Fabled Kingdom",
+    "Ruined City",
+    "Puppet Island",
+    "Virtual Dungeon",
+    "Snowy Kingdom",
+    "Dungeon Throne",
+    "Mountain Temple",
+    "Rain Village",
+    "Shibuya District"
 ]
 
 ; ========== Constants and Theme Setup ==========
@@ -251,6 +255,7 @@ OpenDebugMenu(*) {
         "Check For Lobby",
         "Unit Successfully Placed",
         "Test Game Over",
+        "Check Active Cards",
         "Test screen resolution / DPI",
         "Custom FindText (paste code below)"
     ]
@@ -305,6 +310,10 @@ RunDebugTest(selected, customCode, ResultEdit) {
                 result := CheckForXP(false, false)
                 ResultEdit.Value .= result ? "Game over found!" : "Game over not found"
 
+            case "Check Active Cards":
+                count := CheckForActiveCards("", &report, true)
+                ResultEdit.Value .= report
+
             case "Test screen resolution / DPI":
                 ResultEdit.Value .= "Screen: " A_ScreenWidth "x" A_ScreenHeight ""
                 ResultEdit.Value .= "`nDPI: " A_ScreenDPI
@@ -356,9 +365,9 @@ placementSaveBtn.OnEvent("Click", (*) => SaveSettingsForMode())
 MainUI.SetFont("s9")
 
 global NextLevelBox := MainUI.Add("Checkbox", "x900 y451 cffffff", "Next Level")
-global ReturnLobbyBox := MainUI.Add("CheckBox", "x1005 y451 cffffff Checked", "Return To Lobby")
+global ReturnLobbyBox := MainUI.Add("CheckBox", "x1005 y451 cffffff", "Return To Lobby")
 
-global MatchMaking := MainUI.Add("Checkbox", "x900 y476 cffffff Checked", "Matchmaking")
+global MatchMaking := MainUI.Add("Checkbox", "x900 y476 cffffff", "Matchmaking")
 
 ;Contract Options
 global TeamSwap := MainUI.Add("CheckBox", "x1015 y476 cffffff", "Allow Team Swaps")
@@ -381,7 +390,7 @@ global CardBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c
 
 global FoolsHuntCardText := MainUI.Add("Text", "x825 y110 Hidden cffffff", "Fool's Hunt Cards: ")
 global FoolsHuntCardButton := MainUI.Add("Button", "x975 y108 w80 h20 Hidden cffffff", "Edit Cards")
-FoolsHuntCardButton.OnEvent("Click", (*) => SwitchCardMode("Fool's Hunt"))
+FoolsHuntCardButton.OnEvent("Click", (*) => SwitchCardMode("Fool's Hunt", true))
 
 ; === Event Configuration ===
 global EventBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Event Configuration")
@@ -486,6 +495,7 @@ RecordImport := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hidden
 global CustomWalkBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden" uiTheme[1], "Custom Walk Configuration")
 global WalkMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
 global WalkMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
+WalkMapDropdown.OnEvent("Change", UpdateWalkListView)
 AddMovementProfileButton := MainUI.Add("Picture", "x1120 y103 w15 h15 Hidden", Add)
 AddMovementProfileButton.OnEvent("Click", (*) => AddMovementProfile())
 DeleteMovementProfileButton := MainUI.Add("Picture", "x1120 y118 w15 h15 Hidden", Trash)
@@ -501,6 +511,17 @@ MovementImport.OnEvent("Click", (*) => ImportMovements())
 MovementExport := MainUI.Add("Picture", "x845 y108 w20 h20 +BackgroundTrans Hidden", Export)
 MovementExport.OnEvent("Click", (*) => ExportMovements(WalkMapDropdown.Text))
 
+
+global WalkTipText := MainUI.Add("Text", "x825 y140 w510 h105 Hidden cffffff", "Useful Information: Press Left Shift to stop recording" .
+"`n`nNote: Some map movements may be incorrect due to multiple spawn angles" .
+"`n`nCurrent Recorded Movements:")
+
+global WalkListView := MainUI.Add("ListView", "x825 y215 w420 h150 Hidden -Multi cBlack", ["#", "Direction", "Duration", "Delay"])
+WalkListView.OnEvent("DoubleClick", EditSelectedMovement)
+global WalkRemoveBtn := MainUI.Add("Button", "x1255 y215 w80 h25 Hidden", "Remove")
+WalkRemoveBtn.OnEvent("Click", RemoveSelectedMovement)
+global WalkEditBtn := MainUI.Add("Button", "x1255 y280 w80 h25 Hidden", "Edit")
+WalkEditBtn.OnEvent("Click", EditSelectedMovement)
 ; === Custom Placement Settings ===
 global CustomSettings := MainUI.Add("GroupBox", "x130 y632 w665 h60 +Center c" uiTheme[1], "Custom Placement Settings")
 PlacementSettingsImportButton := AddUI("Picture", "x150 y652 w27 h27 +BackgroundTrans", Import, (*) => ImportCustomCoords())
@@ -524,7 +545,7 @@ DiscordButton.OnEvent("Click", (*) => OpenDiscord())
 ;--------------SETTINGS--------------;
 global modeSelectionGroup := MainUI.Add("GroupBox", "x808 y38 w500 h45 +Center Background" uiTheme[2], "Game Mode Selection")
 MainUI.SetFont("s10 c" uiTheme[6])
-global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts", "Custom"])
+global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts", "Infinity Castle", "Legend Stages", "Portal", "Custom"])
 global EventDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center Hidden", ["Fool's Hunt"])
 global StoryDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Planet Greenie", "Walled City", "Snowy Town", "Sand Village", "Navy Bay", "Fiend City", "Spirit World", "Ant Kingdom", "Magic Town", "Haunted Academy", "Magic Hills", "Space Center", "Alien Spaceship", "Fabled Kingdom", "Ruined City", "Puppet Island", "Virtual Dungeon", "Snowy Kingdom", "Dungeon Throne", "Mountain Temple", "Rain Village", "Shibuya District"])
 global StoryActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Infinity"])
@@ -532,7 +553,7 @@ global LegendDropDown := MainUI.Add("DropDownlist", "x968 y53 w150 h180 Choose0 
 global LegendActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Random"])
 global RaidDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Ant Kingdom", "Sacred Planet", "Strange Town", "Ruined City", "Cursed Festival", "Future City (Tyrant)", "Storm Hideout", "Future City", "Nightmare Train", "Sand Village"])
 global RaidActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5"])
-global InfinityCastleDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Normal", "Hard"])
+global InfinityCastleDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose1 +Center", ["Normal", "Hard"])
 global PortalDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Alien Portal", "Puppet Portal", "Demon Leader's Portal", "Eclipse Portal", "Noble Portal", "Shibuya Portal"])
 global PortalRoleDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Creating", "Joining", "Solo"])
 global ContractPageDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Page 1", "Page 2","Page 3","Page 4","Page 5","Page 6", "Page 4-5"])
@@ -588,7 +609,7 @@ AddUnitCard(MainUI, index, x, y) {
 
     ; Main Labels
     MainUI.SetFont("s11 Bold c" uiTheme[1])
-    unit.EnabledTitle   := AddText(x + 30, y + 18, 60, 25, "+BackgroundTrans", "Unit " index)
+    unit.EnabledTitle   := AddText(x + 30, y + 13, 60, 25, "+BackgroundTrans", "Unit " index)
 
     ; Unit Configuration
     MainUI.SetFont("s9 c" uiTheme[1])
@@ -600,7 +621,7 @@ AddUnitCard(MainUI, index, x, y) {
     }
 
     if (!AutoAbilityDisabled) {
-        unit.AutoAbilityText := AddText(x + 275, y + 17, 250, 20, "BackgroundTrans", "Enable Auto Ability")
+        unit.AutoAbilityText := AddText(x + 280, y + 15, 250, 20, "BackgroundTrans", "Enable Auto Ability")
     }
 
     if (!unitUpgradeLimitDisabled) {
@@ -619,29 +640,29 @@ Loop 6 {
     AddUnitCard(MainUI, A_Index, 808, y_start + ((A_Index-1)*y_spacing))
 }
 
-enabled1 := MainUI.Add("CheckBox", "x818 y105 w15 h15", "")
-enabled2 := MainUI.Add("CheckBox", "x818 y155 w15 h15", "")
-enabled3 := MainUI.Add("CheckBox", "x818 y205 w15 h15", "")
-enabled4 := MainUI.Add("CheckBox", "x818 y255 w15 h15", "")
-enabled5 := MainUI.Add("CheckBox", "x818 y305 w15 h15", "")
-enabled6 := MainUI.Add("CheckBox", "x818 y355 w15 h15", "")
+enabled1 := MainUI.Add("CheckBox", "x818 y100 w15 h15", "")
+enabled2 := MainUI.Add("CheckBox", "x818 y150 w15 h15", "")
+enabled3 := MainUI.Add("CheckBox", "x818 y200 w15 h15", "")
+enabled4 := MainUI.Add("CheckBox", "x818 y250 w15 h15", "")
+enabled5 := MainUI.Add("CheckBox", "x818 y300 w15 h15", "")
+enabled6 := MainUI.Add("CheckBox", "x818 y350 w15 h15", "")
 
-abilityEnabled1 := MainUI.Add("CheckBox", "x1065 y90 w15 h15", "")
+abilityEnabled1 := MainUI.Add("CheckBox", "x1065 y100 w15 h15", "")
 upgradeEnabled1 := MainUI.Add("CheckBox", "x1065 y110 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
 
-abilityEnabled2 := MainUI.Add("CheckBox", "x1065 y140 w15 h15", "")
+abilityEnabled2 := MainUI.Add("CheckBox", "x1065 y150 w15 h15", "")
 upgradeEnabled2 := MainUI.Add("CheckBox", "x1065 y160 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
 
-abilityEnabled3 := MainUI.Add("CheckBox", "x1065 y190 w15 h15", "")
+abilityEnabled3 := MainUI.Add("CheckBox", "x1065 y200 w15 h15", "")
 upgradeEnabled3 := MainUI.Add("CheckBox", "x1065 y210 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
 
-abilityEnabled4 := MainUI.Add("CheckBox", "x1065 y240 w15 h15", "")
+abilityEnabled4 := MainUI.Add("CheckBox", "x1065 y250 w15 h15", "")
 upgradeEnabled4 := MainUI.Add("CheckBox", "x1065 y260 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
 
-abilityEnabled5 := MainUI.Add("CheckBox", "x1065 y290 w15 h15", "")
+abilityEnabled5 := MainUI.Add("CheckBox", "x1065 y300 w15 h15", "")
 upgradeEnabled5 := MainUI.Add("CheckBox", "x1065 y310 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
 
-abilityEnabled6 := MainUI.Add("CheckBox", "x1065 y340 w15 h15", "")
+abilityEnabled6 := MainUI.Add("CheckBox", "x1065 y350 w15 h15", "")
 upgradeEnabled6 := MainUI.Add("CheckBox", "x1065 y360 w15 h15 " (autoUpgradeDisabled ? "Hidden" : ""), "")
 
 upgradeLimitEnabled1 := MainUI.Add("CheckBox", "x1235 y105 w15 h15 " (unitUpgradeLimitDisabled ? "Hidden" : ""), "")
@@ -968,7 +989,7 @@ InitControlGroups() {
     ]
 
     ControlGroups["Map Movement"] := [
-        CustomWalkBorder, WalkMapText, WalkMapDropdown, MovementSetButton, MovementClearButton, MovementTestButton,
+        CustomWalkBorder, WalkMapText, WalkMapDropdown, WalkTipText, WalkListView, WalkRemoveBtn, WalkEditBtn, MovementSetButton, MovementClearButton, MovementTestButton,
         MovementImport, MovementExport
     ]
 

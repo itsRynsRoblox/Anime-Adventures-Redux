@@ -3,12 +3,10 @@
 class TimerManager {
     static timers := Map()
 
-    ; Starts a failsafe timer for a given name and duration (ms)
     static Start(name, durationMs) {
         this.timers[name] := A_TickCount + durationMs
 
         if (debugMessages) {
-            ; Convert ms → minutes:seconds
             totalSeconds := Floor(durationMs / 1000)
             minutes := Floor(totalSeconds / 60)
             seconds := Mod(totalSeconds, 60)
@@ -19,7 +17,7 @@ class TimerManager {
         }
     }
 
-    ; Checks if the failsafe timer has expired
+    ; Checks if the timer has expired
     static HasExpired(name) {
         return this.timers.Has(name) && A_TickCount >= this.timers[name]
     }

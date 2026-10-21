@@ -18,7 +18,7 @@ GetMapForMode(mode) {
     switch mode {
         case "Story":
             return StoryDropdown.Text
-        case "Legend Stage":
+        case "Legend Stages":
             return LegendDropDown.Text
         case "Raid":
             return RaidDropdown.Text
@@ -77,6 +77,7 @@ StopRecordingWalk(*) {
     }
     activeHotkeys := []  ; clear list
     SaveAllMovements()
+    UpdateWalkListView()
 }
 
 RecordKeyDown(key, *) {
@@ -185,6 +186,8 @@ LoadAllMovements(*) {
 
         allWalks[mapName].Push({ key: key, duration: duration, delay: delay })
     }
+
+    UpdateWalkListView()
 }
 
 ExportMovements(mapName := "") {
@@ -297,4 +300,112 @@ ClearMovement(*) {
     AddToLog("Clearing movements for map: " mapName)
     allWalks.Delete(mapName)
     SaveAllMovements()
+}
+
+UpdateWalkListView(*) {
+    global allWalks, WalkMapDropdown, WalkListView
+
+    WalkListView.Delete()          ; clear current rows
+
+    mapName := WalkMapDropdown.Text
+    if !allWalks.Has(mapName) || allWalks[mapName].Length = 0
+        return
+
+    directionMap := Map(
+        "w", "Forward",
+        "a", "Left",
+        "s", "Backward",
+        "d", "Right"
+    )
+
+    for i, entry in allWalks[mapName] {
+        dir := directionMap.Has(entry.key) ? directionMap[entry.key] : entry.key
+        WalkListView.Add(, i, dir, entry.duration " ms", entry.delay " ms")
+    }
+
+    ; Auto-size columns
+    loop 4
+        WalkListView.ModifyCol(A_Index, "AutoHdr")
+}
+
+RemoveSelectedMovement(*) {
+    global allWalks, WalkMapDropdown, WalkListView
+
+    row := WalkListView.GetNext()          ; get selected row number
+    if !row
+        return
+
+    mapName := WalkMapDropdown.Text
+    if !allWalks.Has(mapName)
+        return
+
+    ; Remove the selected entry (ListView rows are 1-based, array is 1-based too)
+    allWalks[mapName].RemoveAt(row)
+
+    SaveAllMovements()
+    UpdateWalkListView()                   ; refresh the list
+    AddToLog("Removed movement #" row " from " mapName)
+}
+
+EditSelectedMovement(*) {
+    global allWalks, WalkMapDropdown, WalkListView
+
+    row := WalkListView.GetNext()
+    if !row
+        return
+
+    mapName := WalkMapDropdown.Text
+    if !allWalks.Has(mapName) || row > allWalks[mapName].Length
+        return
+
+    entry := allWalks[mapName][row]
+
+    ; Create a small edit popup
+    editGui := Gui("+AlwaysOnTop -MinimizeBox", "Edit Movement #" row)
+    editGui.SetFont("s10")
+
+    editGui.Add("Text", "x20 y20", "Direction:")
+    dirDDL := editGui.Add("DropDownList", "x100 y18 w120", ["Forward", "Left", "Backward", "Right"])
+
+    ; Set current direction
+    directionMap := Map("w", "Forward", "a", "Left", "s", "Backward", "d", "Right")
+    reverseMap := Map("Forward", "w", "Left", "a", "Backward", "s", "Right", "d")
+    currentDir := directionMap.Has(entry.key) ? directionMap[entry.key] : "Forward"
+    dirDDL.Choose(currentDir)
+
+    editGui.Add("Text", "x20 y55", "Duration (ms):")
+    durEdit := editGui.Add("Edit", "x120 y53 w100 Number", entry.duration)
+
+    editGui.Add("Text", "x20 y90", "Delay (ms):")
+    delayEdit := editGui.Add("Edit", "x120 y88 w100 Number", entry.delay)
+
+    saveBtn := editGui.Add("Button", "x40 y130 w80", "Save")
+    cancelBtn := editGui.Add("Button", "x140 y130 w80", "Cancel")
+
+    saveBtn.OnEvent("Click", (*) => SaveEditedMovement())
+    cancelBtn.OnEvent("Click", (*) => editGui.Destroy())
+    editGui.OnEvent("Close", (*) => editGui.Destroy())
+
+    editGui.Show("w260 h180")
+
+    SaveEditedMovement() {
+        newDir := dirDDL.Text
+        newDur := Integer(durEdit.Value)
+        newDelay := Integer(delayEdit.Value)
+
+        if (newDur < 0 || newDelay < 0) {
+            MsgBox("Duration and Delay must be 0 or higher.")
+            return
+        }
+
+        ; Update the actual data
+        allWalks[mapName][row].key := reverseMap[newDir]
+        allWalks[mapName][row].duration := newDur
+        allWalks[mapName][row].delay := newDelay
+
+        SaveAllMovements()
+        UpdateWalkListView()
+        editGui.Destroy()
+        AddToLog("Updated movement #" row " on map: " mapName)
+    }
 }

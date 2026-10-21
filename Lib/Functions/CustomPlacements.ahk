@@ -140,7 +140,7 @@ GetPlacementsForMode(mode) {
     switch mode {
         case "Story":
             return StoryDropdown.Text
-        case "Legend Stage":
+        case "Legend Stages":
             return LegendDropDown.Text
         case "Raid":
             return RaidDropdown.Text

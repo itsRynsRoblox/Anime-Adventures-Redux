@@ -55,7 +55,7 @@ ProcessAbility(coord) {
 
     slot := coord.slot
 
-    if (isMenuOpen("End Screen")) {
+    if (CheckForXP()) {
         AddToLog("Stopping auto ability check because the game ended")
         MonitorStage()
         return false

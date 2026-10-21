@@ -1,156 +1,341 @@
 #Requires AutoHotkey v2.0
 
-StartPortalMode() {
-    StartPortal()
-    RestartStage()
-}
-
-HandlePortalEnd(isVictory := true) {
-    if (PortalRoleDropdown.Text = "Host") {
-        if (isVictory) {
-            AddToLog(PortalDropdown.Text " Portal completed successfully, starting next portal...")
-            StartNextPortal()
-        } else {
-            if (FindText(&X, &Y, 238, 400, 566, 445, 0, 0, Retry)) {
-                ClickReplay()
-                AddToLog(PortalDropdown.Text " Portal failed, retrying...")
-            } else {
-                AddToLog(PortalDropdown.Text " Portal failed, starting next portal...")
-                Sleep(1000)
-                StartNextPortal()
-                Sleep (2500) ; Wait for the portal to start
-            }
-        }
+GetMapForFarming(name) {
+    farmMap := Map(
+        "Eclipse Portal", "Snowy Kingdom",
+        "Snowy Kingdom", "Eclipse Portal",
+        "Demon Leader's Portal", "Fabled Kingdom",
+        "Fabled Kingdom", "Demon Leader's Portal",
+        "Noble Portal", "Mountain Temple",
+        "Mountain Temple", "Noble Portal",
+        "Puppet Portal", "Puppet Island",
+        "Puppet Island", "Puppet Portal",
+        "Shibuya Portal", "Shibuya District",
+        "Shibuya District", "Shibuya Portal"
+    )
+    if (farmMap.Has(name)) {
+        return farmMap[name]
     } else {
-        WaitForRestart()
-    }
-    return RestartStage()
-}
-
-StartNextPortal() {
-    FixClick(387, 398) ; View Portal
-    Sleep(500)
-    FixClick(255, 173) ; Search bar
-    Sleep(500)
-    SendInput(PortalDropdown.Text) ; Type the selected portal
-    Sleep(500)
-    FixClick(242, 232) ; Click on the portal
-    Sleep(500)
-    FixClick(632, 469) ; Enter the portal
-    Sleep(500)
-    FixClick(354, 323) ; Start the portal
-    Sleep(500)
-}
-
-WaitForRestart() {
-    AddToLog("Waiting for host to start next portal")
-    Loop {
-        Sleep(500)
-        if (!isMenuOpen("End Screen")) {
-            break
-        }
+        return "no map found"
     }
 }
 
-IsValidPortal() {
-    Sleep(1000)  ; Allow UI to fully update
-
-    ; === Map Detection ===
-    detectedMap := DetectMapForPortal()
-    if (!detectedMap) {
-        return false
-    }
-
-    if (ShouldSkipMap(detectedMap)) {
-        return false
-    }
-
-    AddToLog("✅ Valid Portal: Map = '" detectedMap "'")
-    return true
-}
-
-DetectMapForPortal() {
-    mapPatterns := Map(
-        "Summer Laguna", SummerLaguna
-    )
-
-    for mapName, pattern in mapPatterns {
-        if (ok := FindText(&X, &Y, 549, 230, 628, 249, 0, 0, pattern)) {
-            return mapName
-        }
-    }
-    return ""
-}
-
-ShouldSkipMap(portalName := "") {
-    static portalMap := Map(
-        "Summer Laguna", "Summer Laguna"
-    )
-
-    selectedMap := PortalDropdown.Text
-
-    if !portalMap.Has(selectedMap)
-        return false
-
-    return portalName != portalMap[selectedMap]
+SetMapForPortalFarm(name) {
+    return StoryDropdown.Text := name
 }
 
 StartPortal() {
-    if (PortalRoleDropdown.Text = "Host") {
-        if (PortalLobby.Value) {
-            FixClick(88, 288) ; Open Inventory
-            Sleep (500)
-            FixClick(135, 201) ; Click on the Portal Selection
-            Sleep (500)
-            FixClick(245, 174) ; Search bar
-            Sleep (500)
-            SendInput(PortalDropdown.Text) ; Type the selected portal
-            Sleep (500)
+    HandlePortalJoin()
+    Sleep(2500)
+    RestartStage()
+}
 
-            ; Try each portal in order
-            for index, portal in [1, 2, 3, 4, 5] {
-                SelectPortal(portal)
-                Sleep(500)
-
-                AddToLog("✅ Portal " . portal . " selected successfully.")
-                FixClick(620, 470) ; Spawn Portal
-                Sleep (500)
-                FixClick(69, 398) ; Start Portal
-                Sleep (2500)
-                return true ; Success, exit early
-
-                /*AddToLog("Checking portal " . portal . "...")
-
-                if (IsValidPortal()) {
-                    AddToLog("✅ Portal " . portal . " selected successfully.")
-                    FixClick(620, 470) ; Spawn Portal
-                    Sleep (500)
-                    FixClick(69, 398) ; Start Portal
-                    Sleep (2500)
-                    return true ; Success, exit early
-                } else {
-                    AddToLog("❌ Portal " . portal . " is not valid. Trying next...")
-                } */
+SwitchActiveFarm() {
+    global mode
+    if (ModeDropdown.Text = "Story") {
+        newMap := GetMapForFarming(StoryDropdown.Text)
+        if (newMap != "no map found") {
+            ModeDropdown.Text := "Portal"
+            PortalDropdown.Text := newMap
+            PortalRoleDropdown.Text := "Solo"
+            mode := "Portal"
+            AddToLog("Switched to " newMap)
+            if (debugMessages) {
+                AddToLog("Mode: " ModeDropdown.Text)
+                AddToLog("Portal: " PortalDropdown.Text)
+                AddToLog("Role: " PortalRoleDropdown.Text)
             }
-
-            AddToLog("🚫 No valid portals found.")
-            return false
+        } else {
+            if (debugMessages) {
+                AddToLog("No valid portal mapping found for " StoryDropdown.Text)
+            }
+        }
+    } else {
+        newMap := GetMapForFarming(PortalDropdown.Text)
+        if (newMap != "no map found") {
+            ModeDropdown.Text := "Story"
+            StoryActDropdown.Text := "Infinity"
+            StoryDropdown.Text := newMap
+            mode := "Story"
+            AddToLog("Switched to " newMap " for farming portals")
+            if (debugMessages) {
+                AddToLog("Mode: " ModeDropdown.Text)
+                AddToLog("Story Act: " StoryActDropdown.Text)
+                AddToLog("Story: " StoryDropdown.Text)
+            }
+        } else {
+            if (debugMessages) {
+                AddToLog("No valid story mapping found for " PortalDropdown.Text)
+            }
         }
     }
 }
 
-SelectPortal(portal := 0) {
-    coords := GetPortalCoords(portal)
-    FixClick(coords.x, coords.y)
+HandlePortalJoin() {
+    switch PortalDropdown.text {
+        case "Deception Portal":
+            selectedPortal := "Deception"
+        case "Demon Leader's Portal":
+            selectedPortal := "Demon"
+        case "Puppet Portal":
+            selectedPortal := "P"
+        case "Alien Portal":
+            selectedPortal := "A"
+        case "Noble Portal":
+            selectedPortal := "N"
+        case "Shibuya Portal":
+            selectedPortal := "S"
+        case "Eclipse Portal":
+            selectedPortal := "E"
+    }
+    joinType := PortalRoleDropdown.Text
+
+    FixClick(640, 70) ; Closes Player leaderboard
+    Sleep(500)
+
+    ; Click items and portals tab
+    ClickItemsAndPortalsTab()
+
+    ; Click search and type portal name
+    ClickSearchAndTypePortal(selectedPortal)
+
+    if (joinType = "Solo") {
+        AddToLog("Soloing " PortalDropdown.text)
+        HandlePortalSelection()
+        ;FixClick(400, 460)  ; Start portal
+    } else if (joinType = "Creating") {
+        AddToLog("Creating " PortalDropdown.text)
+        HandlePortalSelection()
+        AddToLog("Waiting 15 seconds for others to join")
+        Sleep(15000)
+        FixClick(400, 460)  ; Start portal
+    } else {
+        AddToLog("Please join " PortalDropdown.text " manually")
+        Sleep(5000)
+    }
 }
 
-GetPortalCoords(portal) {
-    coordMap := Map(
-        1, {x: 240, y: 235},
-        2, {x: 305, y: 235},
-        3, {x: 365, y: 235},
-        4, {x: 430, y: 235},
-        5, {x: 490, y: 235},
-    )
-    return coordMap.Has(portal) ? coordMap[portal] : coordMap[0]
+HandlePortalSelection() {
+    sleep 200
+    FixClick(211, 289)  ; Click On Portal
+    Sleep(1500)
+    CheckForPortal(true)
+    Sleep(1500)
+    FixClick(250, 350) ; Click Open
+    Sleep(1500)
+}
+
+ClickItemsAndPortalsTab() {
+    FixClick(33, 300) ; Click items
+    Sleep(1500)
+    FixClick(435, 230) ; Click portals tab
+    Sleep(1500)
+}
+
+ClickSearchAndTypePortal(selectedPortal) {
+    FixClick(510, 190) ; Click search
+    Sleep(1500)
+    ; Loops through every character in selectedPortal one by one
+    loop parse, selectedPortal {
+        SendInput(A_LoopField)
+        Sleep(200) ; Adjust this number to change the delay in milliseconds
+    }
+    Sleep(200)
+}
+
+CheckForPortal(lobby := false) {
+    x1 := lobby ? 211 : 257
+    y1 := lobby ? 341 : 419
+    x2 := lobby ? 401 : 445
+    y2 := lobby ? 504 : 520
+    portalText := lobby ? UsePortal : SelectPortal
+    action := lobby ? "starting portal" : "restarting portal"
+
+    if TryHandlePortal(x1, y1, x2, y2, portalText, action) {
+        return
+    }
+    HandlePortalFallback(lobby)
+}
+
+TryHandlePortal(x1, y1, x2, y2, portalText, action) {
+    if (ok := FT(&portalX, &portalY, x1, y1, x2, y2, 0, 0, portalText)) {
+        AddToLog("Portal detected, " action "...")
+        (portalText = SelectPortal) ? ClickSelectPortal() : ClickUsePortal()
+            return true
+    }
+    return false
+}
+
+HandlePortalFallback(lobby := false) {
+    FixClick(660, 187) ; Close Portal Interface
+    SwitchActiveFarm()
+    Sleep(1500)
+    if (!lobby) {
+        ClickReturnToLobby()
+    }
+    return CheckLobby()
+}
+
+HandlePortalEnd() {
+    global inChallengeMode
+    switch PortalDropdown.text {
+        case "Demon Leader's Portal":
+            selectedPortal := "De"
+        case "Puppet Portal":
+            selectedPortal := "P"
+        case "Alien Portal":
+            selectedPortal := "A"
+        case "Noble Portal":
+            selectedPortal := "N"
+        case "Shibuya Portal":
+            selectedPortal := "S"
+        case "Eclipse Portal":
+            selectedPortal := "E"
+    }
+
+    loop {
+        Sleep(3000)
+        FixClick(560, 560)
+
+        HandleTextFind(300, 190, 360, 250, UnitExit, -4, -35)
+        Sleep(1500)
+
+        HandleTextFind(260, 400, 390, 450, NextText, 0, -40)
+        Sleep(1500)
+
+        if (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText) or (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText2))) {
+            if (inChallengeMode) {
+                CompleteChallenge()
+                return
+            }
+
+            AddToLog("Found Lobby Text - creating/joining new portal")
+            Sleep(2000)
+
+            CreateOrJoinPortal(selectedPortal)
+
+            if (PortalRoleDropdown.Text = "Solo") {
+                sleep 1000
+                FixClick(400, 460)  ; Start portal
+                return RestartStage()
+            } else if (PortalRoleDropdown.Text = "Creating") {
+                Sleep(5000)
+            } else {
+                AddToLog("Waiting for next portal")
+                Sleep(5000)
+            }
+            return RestartStage()
+        }
+
+        Reconnect()
+    }
+}
+
+HandleTextFind(x1, y1, x2, y2, text, offsetX, offsetY) {
+    if (ok := FT(&X, &Y, x1, y1, x2, y2, 0, 0, text)) {
+        ClickUntilGone(0, 0, x1, y1, x2, y2, text, offsetX, offsetY)
+    }
+}
+
+CompleteChallenge() {
+    global inChallengeMode, challengeStartTime
+    AddToLog("Challenge completed - returning to selected mode")
+    inChallengeMode := false
+    challengeStartTime := A_TickCount
+    Sleep(1500)
+    ClickReturnToLobby()
+    CheckLobby()
+}
+
+CreateOrJoinPortal(selectedPortal) {
+    FixClick(485, 120) ; Select New Portal
+    Sleep(1500)
+    FixClick(510, 190) ; Click search
+    Sleep(1500)
+    SendInput(selectedPortal)
+    Sleep(1500)
+    FixClick(215, 285) ; Click On Portal
+    Sleep(1500)
+    CheckForPortal(false)
+    Sleep(5000)
+}
+
+ClickSelectPortal() {
+    ClickUntilGone(0, 0, 257, 419, 445, 520, SelectPortal, 0, -35)
+}
+
+ClickUsePortal() {
+    ClickUntilGone(0, 0, 211, 341, 401, 504, UsePortal, 0, -35)
+}
+
+HandlePortalReJoin() {
+    switch PortalDropdown.text {
+        case "Demon Leader's Portal":
+            selectedPortal := "De"
+        case "Puppet Portal":
+            selectedPortal := "P"
+        case "Alien Portal":
+            selectedPortal := "A"
+        case "Noble Portal":
+            selectedPortal := "N"
+        case "Shibuya Portal":
+            selectedPortal := "S"
+        case "Eclipse Portal":
+            selectedPortal := "E"
+    }
+
+    joinType := PortalRoleDropdown.Text
+
+    loop {
+        Sleep(3000)
+        FixClick(560, 560)
+
+        HandleTextFind(300, 190, 360, 250, UnitExit, -4, -35)
+        Sleep(1500)
+
+        HandleTextFind(201, 196, 633, 508, NextText, -4, -35)
+
+        HandleTextFind(80, 85, 739, 224, LobbyText, -4, -35)
+
+        if (ok := FT(&X, &Y, 746, 514, 789, 530, 0, 0, AreaText)) {
+            if (!inChallengeMode && IsChallengeReady()) {
+                AddToLog("Schedule: next step")
+                return StartSelectedMode()
+            }
+
+            if (inChallengeMode) {
+                CompleteChallenge()
+                return
+            }
+
+            AddToLog("Found Lobby Text - creating/joining new portal")
+            Sleep(2000)
+
+            FixClick(640, 70) ; Closes Player leaderboard
+            Sleep(500)
+
+            ; Click items and portals tab
+            ClickItemsAndPortalsTab()
+
+            ; Click search and type portal name
+            ClickSearchAndTypePortal(selectedPortal)
+
+            if (joinType = "Solo") {
+                AddToLog("Soloing " selectedPortal)
+                HandlePortalSelection()
+                FixClick(400, 460)  ; Start portal
+                return RestartStage()
+            } else if (joinType = "Creating") {
+                AddToLog("Creating " selectedPortal)
+                HandlePortalSelection()
+                AddToLog("Waiting 15 seconds for others to join")
+                Sleep(15000)
+                FixClick(400, 460)  ; Start portal
+                return RestartStage()
+            } else {
+                AddToLog("Please join " selectedPortal " manually")
+                Sleep(5000)
+            }
+        }
+    }
 }

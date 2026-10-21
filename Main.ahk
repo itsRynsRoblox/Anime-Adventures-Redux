@@ -12,6 +12,7 @@ global scriptInitialized := false
 #Include %A_ScriptDir%/lib/GameMango.ahk
 
 ; === Saving and Loading Configs ===
+#Include %A_ScriptDir%/lib/Functions/CardManager.ahk
 #Include %A_ScriptDir%/lib/Config.ahk
 
 ; === Tool Libraries ===
@@ -24,6 +25,9 @@ global scriptInitialized := false
 #Include %A_ScriptDir%/lib/Tools/WindowFollow.ahk
 
 ; === Game Modes ===
+#Include %A_ScriptDir%/lib/Modes/Challenge.ahk
+#Include %A_ScriptDir%/lib/Modes/Infinity Castle.ahk
+#Include %A_ScriptDir%/lib/Modes/Legend Stages.ahk
 #Include %A_ScriptDir%/lib/Modes/Portal.ahk
 #Include %A_ScriptDir%/lib/Modes/Story.ahk
 #Include %A_ScriptDir%/lib/Modes/Raid.ahk
@@ -35,12 +39,12 @@ global scriptInitialized := false
 
 ; === Core Mechanics ===
 #Include %A_ScriptDir%/lib/Functions/Functions.ahk
+#Include %A_ScriptDir%/lib/Functions/Matchmaking.ahk
 #Include %A_ScriptDir%/lib/Functions/Upgrading.ahk
 #Include %A_ScriptDir%/lib/Functions/UnitPlacement.ahk
 #Include %A_ScriptDir%/lib/Functions/AutoAbilityManager.ahk
 #Include %A_ScriptDir%/lib/Functions/WalkManager.ahk
 #Include %A_ScriptDir%/lib/PlacementPatterns.ahk
-#Include %A_ScriptDir%/lib/Functions/CardManager.ahk
 #Include %A_ScriptDir%/lib/Functions/TimerManager.ahk
 #Include %A_ScriptDir%/lib/Functions/CustomPlacements.ahk
 #Include %A_ScriptDir%/lib/Functions/ProfileManager.ahk
