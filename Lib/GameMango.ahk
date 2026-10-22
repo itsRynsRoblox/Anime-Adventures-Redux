@@ -1919,8 +1919,7 @@ RestartStage() {
         TimerManager.Resume("Teleport Failsafe")
     }
 
-    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() :
-        DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
+    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
 
     ; Wait for loading
     CheckLoaded()
@@ -2025,7 +2024,7 @@ CheckLobby() {
 }
 
 CheckForLobby() {
-    return FT(&X, &Y, 741, 501, 792, 594, 0, 0, AreaText)
+    return FT(&X, &Y, 742, 239, 789, 502, 0.10, 0.10, ProfileText)
 }
 
 CheckLoaded() {

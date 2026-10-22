@@ -104,3 +104,44 @@ GetRandomAct(map := "") {
 
     return acts[Random(1, acts.Length)]
 }
+
+TestAllLegendMaps() {
+    ; List of all maps in the order you want to test them
+    maps := [
+        "Magic Hills",
+        "Spirit Invasion",
+        "Space Center",
+        "Fabled Kingdom",
+        "Ruined City",
+        "Virtual Dungeon",
+        "Dungeon Throne",
+        "Rain Village"
+    ]
+
+    for mapName in maps {
+        data := GetLegendMap(mapName)
+        if !data {
+            continue
+        }
+
+        if (!WinActive(rblxID)) {
+            AddToLog("Stopped testing because the game window is no longer active.")
+            return
+        }
+
+        AddToLog("Testing map: " mapName)
+
+        ; Scroll down to the map
+        ScrollDown(data.scrolls)
+
+        ; Click the map
+        FixClick(data.x, data.y)
+        Sleep(800)
+
+        ; Scroll all the way back up
+        ScrollUp(data.scrolls)
+        Sleep(400)
+    }
+
+    AddToLog("Finished testing all legend stage maps!")
+}

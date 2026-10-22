@@ -923,9 +923,9 @@ ClickUntilGone(x, y, searchX1, searchY1, searchX2, searchY2, textToFind, offsetX
     while (ok := FT(&X, &Y, searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind) || textToFind2 && FT(&X, &Y,
         searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind2)) {
         if (offsetX != 0 || offsetY != 0) {
-            FixClick(X + offsetX, Y + offsetY, "Right")
+            FixClick(X + offsetX, Y + offsetY)
         } else {
-            FixClick(x, y, "Right")
+            FixClick(x, y)
         }
         Sleep(1000)
     }

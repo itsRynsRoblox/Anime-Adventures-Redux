@@ -35,6 +35,7 @@ global scriptInitialized := false
 
 ; === Main Script ===
 #Include %A_ScriptDir%/lib/GUI.ahk
+#Include %A_ScriptDir%/lib/Theme.ahk
 #Include %A_ScriptDir%/lib/GameMango.ahk
 
 ; === Saving and Loading Configs ===

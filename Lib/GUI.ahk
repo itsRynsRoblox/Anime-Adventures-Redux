@@ -2,11 +2,12 @@
 #SingleInstance Force
 #Include %A_ScriptDir%/Lib/Tools/Image.ahk
 #Include %A_ScriptDir%/Lib/Functions/Functions.ahk
+#Include %A_ScriptDir%/Lib/Theme.ahk
 
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.4"
+global version := "v0.1.5"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -67,14 +68,9 @@ global lastlog := ""
 global MainUIHwnd := MainUI.Hwnd
 global ActiveControlGroup := ""
 global ControlGroups := Map()
-;Theme colors
-uiTheme.Push("F2F2F2")  ; Header color
-uiTheme.Push("0c000a")  ; Background color
-uiTheme.Push("22a9e8")  ; Highlight
-uiTheme.Push("0c000a")  ; Accent color
-uiTheme.Push("0x3d3c36")   ; Trans color
-uiTheme.Push("000000")    ; Textbox color
-uiTheme.Push("22a9e8")  ; Highlight
+;Theme colors - loaded from Settings\Theme.ini (defaults if missing) and editable in-app
+;(Settings > Customize Theme...). Fills uiTheme[] and uiColors. See Lib\Tools\Theme.ahk
+Theme_Init()
 ;Logs/Save settings
 global currentOutputFile := A_ScriptDir "\Logs\LogFile.txt"
 ;Custom Pictures
@@ -124,13 +120,7 @@ global customDropdowns := [
 mainWidth := 1364
 mainHeight := 697
 robloxWidth := 802
-uiColors := Map(
-    "Primary", uiTheme[1],
-    "Background", uiTheme[2],
-    "Border", uiTheme[3],
-    "RobloxBox", uiTheme[5],
-    "ProcessHighlight", uiTheme[7]
-)
+; uiColors / uiTheme are created and kept in sync by Theme_Init() / Theme_Apply()
 
 ; ========== Helper Functions ==========
 AddUI(type, options, text := "", onClickFunc := unset) {
@@ -185,14 +175,17 @@ global robloxHolder := MainUI.Add("Text", Format("x3 y33 w797 h597 +Background{}
 
 ; ========== Exit and Minimize Buttons ==========
 global exitButton := AddUI("Picture", "x1330 y1 w32 h32 +BackgroundTrans", Exitbutton, (*) => Destroy())
-global minimizeButton := AddUI("Picture", "x1305 y3 w27 h27 +Background" uiColors["Background"], Minimize, (*) => minimizeUI())
+global minimizeButton := AddUI("Picture", "x1305 y3 w27 h27 +Background" uiColors["Background"], Minimize, (*) =>
+    minimizeUI())
 
 ; ========== Import ==========
-global importUnitConfigButton := AddUI("Picture", "x1312 y48 w20 h20 +BackgroundTrans", Import, (*) => LoadUnitSettingsByMode(true))
-global exportUnitConfigButton := AddUI("Picture", "x1337 y48 w20 h20 +BackgroundTrans", Export, (*) => SaveSettingsForMode(true))
+global importUnitConfigButton := AddUI("Picture", "x1312 y48 w20 h20 +BackgroundTrans", Import, (*) =>
+    LoadUnitSettingsByMode(true))
+global exportUnitConfigButton := AddUI("Picture", "x1337 y48 w20 h20 +BackgroundTrans", Export, (*) =>
+    SaveSettingsForMode(true))
 
 ; ========== Title ==========
-MainUI.SetFont("Bold s16 c" uiColors["Primary"], "Verdana")
+MainUI.SetFont("Bold s16 c" uiColors["Primary"], Theme_Get("TitleFont"))
 global windowTitle := MainUI.Add("Text", "x10 y2 w1200 h29 +BackgroundTrans", GameTitle "" . "" version . " (Free)")
 
 ; ========== Console Label ==========
@@ -219,26 +212,30 @@ loop 7 {
 ; ========== Transparency ==========
 WinSetTransColor(uiColors["RobloxBox"], MainUI)
 
-
-
-
 OpenGuide(*) {
     global GameName
 
+    ; Colours come from the active theme so this window matches the main UI
+    gBg := Theme_Get("Background")
+    gBody := Theme_Get("Body")
+    gHi := Theme_Get("Highlight")
+    gSub := Theme_Mix(gBody, gBg, 0.25)     ; secondary text
+    gMuted := Theme_Mix(gBody, gBg, 0.50)   ; muted text
+
     GuideGUI := Gui("+AlwaysOnTop +Resize", "Ryn's " GameName " Setup Guide")
-    GuideGUI.BackColor := "111318"
+    GuideGUI.BackColor := gBg
     GuideGUI.MarginX := 24
     GuideGUI.MarginY := 20
     GuideGUI.SetFont("s10", "Segoe UI")
 
-    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", GuideGUI.Hwnd, "int", 20, "int*", 1, "int", 4)
+    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", GuideGUI.Hwnd, "int", 20, "int*", Theme_DarkInt(gBg), "int", 4)
 
     ; ── Header ──────────────────────────────────────────
     GuideGUI.SetFont("s16 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y20 w700 cFFFFFF", "Ryn's Setup Guide")
+    GuideGUI.Add("Text", "x24 y20 w700 c" gBody, "Ryn's Setup Guide")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y52 w700 c9298A5",
+    GuideGUI.Add("Text", "x24 y52 w700 c" gMuted,
         "Follow these steps before starting the macro.")
 
     GuideGUI.Add("Text", "x24 y82 w700 h2 0x10")
@@ -247,40 +244,40 @@ OpenGuide(*) {
 
     ; ── Step 1: Windows Display Settings ────────────────
     GuideGUI.SetFont("s12 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+    GuideGUI.Add("Text", "x24 y" y " w700 c" gHi,
         "01  |  Configure Windows Display Settings")
 
     y += 32
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+    GuideGUI.Add("Text", "x44 y" y " w660 c" gSub,
         "Open Windows Settings > System > Display and configure the following:")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Display resolution: 1920 × 1080 (Recommended)")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Scale: 100%")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "HDR: Disabled")
 
     y += 38
@@ -290,49 +287,49 @@ OpenGuide(*) {
 
     ; ── Step 2: Roblox Settings ─────────────────────────
     GuideGUI.SetFont("s12 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+    GuideGUI.Add("Text", "x24 y" y " w700 c" gHi,
         "02  |  Configure Roblox Settings")
 
     y += 32
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+    GuideGUI.Add("Text", "x44 y" y " w660 c" gSub,
         "Open the Roblox in-game settings menu and configure the following:")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Camera Mode: Default (Classic)")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Graphics Mode: Manual")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Graphics Quality: Lowest")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Fullscreen: Disabled")
 
     y += 38
@@ -342,31 +339,31 @@ OpenGuide(*) {
 
     ; ── Step 3: Anime Adventures Settings ───────────────
     GuideGUI.SetFont("s12 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+    GuideGUI.Add("Text", "x24 y" y " w700 c" gHi,
         "03  |  Configure Anime Adventures Settings")
 
     y += 32
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+    GuideGUI.Add("Text", "x44 y" y " w660 c" gSub,
         "Open Anime Adventures settings and make sure these two settings are configured correctly.")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Disable Auto-Open Upgrade UI")
 
     y += 30
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Show Upgrade UI on Left")
 
     y += 38
@@ -376,13 +373,13 @@ OpenGuide(*) {
 
     ; ── Step 4: Unit Setup ──────────────────────────────
     GuideGUI.SetFont("s12 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+    GuideGUI.Add("Text", "x24 y" y " w700 c" gHi,
         "04  |  Set Up Your Units")
 
     y += 32
 
     GuideGUI.SetFont("s10", "Segoe UI")
-    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+    GuideGUI.Add("Text", "x44 y" y " w660 c" gSub,
         "Set up your unit placements however you prefer. However, avoid using hill-only units if possible, as there is no dedicated hill unit support."
     )
 
@@ -393,7 +390,7 @@ OpenGuide(*) {
     y += 18
 
     GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y" y " w700 Center c8B9DFF",
+    GuideGUI.Add("Text", "x24 y" y " w700 Center c" gHi,
         "You're all set. Good luck!")
 
     y += 42
@@ -401,9 +398,6 @@ OpenGuide(*) {
     ; ── Show Guide ──────────────────────────────────────
     GuideGUI.Show("w748 h" y)
 }
-
-
-
 
 OpenDebugMenu(*) {
     static DebugGUI := ""
@@ -418,18 +412,20 @@ OpenDebugMenu(*) {
     ; Pulled from the macro's uiTheme array so the menu always matches the main UI.
     ; Order: 1 Header, 2 Background, 3 Highlight, 4 Accent, 5 Trans, 6 Textbox, 7 Highlight
     Hex := (c) => RegExReplace(c, "i)^0x")    ; strips "0x" prefix (e.g. "0x3d3c36")
+    bgC := Theme_Get("Background"), bodyC := Theme_Get("Body"), hiC := Theme_Get("Highlight")
     C := {
-        bg: "0d1117",
-        panel: "161b22",
-        accent: "58a6ff",
-        accentHi: "79b8ff",
-        btn: "21262d",
-        btnHi: "30363d",
-        text: "e6edf3",
-        muted: "8b949e",
+        bg: bgC,
+        panel: Theme_Mix(bgC, bodyC, 0.07),
+        accent: hiC,
+        accentHi: Theme_Mix(hiC, "FFFFFF", 0.25),
+        btn: Theme_Mix(bgC, bodyC, 0.14),
+        btnHi: Theme_Mix(bgC, bodyC, 0.24),
+        text: bodyC,
+        muted: Theme_Mix(bodyC, bgC, 0.45),
         ok: "3fb950",
         busy: "d29922"
     }
+    isDark := Theme_DarkInt(bgC)
     W := 520, PAD := 24, IW := W - PAD * 2
 
     DebugGUI := Gui("+AlwaysOnTop -MaximizeBox", "Ryn's " GameName " - Debug Menu")
@@ -438,7 +434,7 @@ OpenDebugMenu(*) {
     DebugGUI.MarginY := PAD
 
     ; Dark title bar (Windows 10 1809+ / 11)
-    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", DebugGUI.Hwnd, "int", 20, "int*", 1, "int", 4)
+    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", DebugGUI.Hwnd, "int", 20, "int*", isDark, "int", 4)
 
     ; ---------- Header ----------
     DebugGUI.SetFont("s17 w700 c" C.text, "Segoe UI")
@@ -454,12 +450,15 @@ OpenDebugMenu(*) {
         "Check for results screen",
         "Check for game over options",
         "Check all on-screen cards",
+        "Check story map coordinates",
+        "Check legend stage map coordinates",
         "Check raid map coordinates",
         "Test screen resolution / DPI",
     ]
     Descriptions := Map(
         "Check for the lobby", "Looks for the lobby screen to confirm you're not in a match.",
-        "Check for successful unit placement", "Checks whether a unit placement was detected (i.e if the unit interface active).",
+        "Check for successful unit placement",
+        "Checks whether a unit placement was detected (i.e if the unit interface active).",
         "Check for results screen", "Looks for the game-over / results screen.",
         "Check for game over options", "Looks for the replay / return to lobby options.",
         "Check all on-screen cards", "Scans the card selection screen for all cards.",
@@ -472,7 +471,8 @@ OpenDebugMenu(*) {
     DebugGUI.SetFont("s10 w400 c" C.text, "Segoe UI")
     DDL := DebugGUI.Add("DropDownList", "x" PAD " y114 w" IW " Background" C.panel, TestOptions)
     DDL.Choose(1)
-    try DllCall("uxtheme\SetWindowTheme", "ptr", DDL.Hwnd, "str", "DarkMode_CFD", "str", "")
+    if isDark
+        try DllCall("uxtheme\SetWindowTheme", "ptr", DDL.Hwnd, "str", "DarkMode_CFD", "str", "")
 
     DebugGUI.SetFont("s9 w400 c" C.muted, "Segoe UI")
     DescText := DebugGUI.Add("Text", "x" PAD " y150 w" IW " h20", Descriptions[TestOptions[1]])
@@ -485,8 +485,10 @@ OpenDebugMenu(*) {
     StatusText := DebugGUI.Add("Text", "x" (W - PAD - 160) " y184 w160 Right", "● Ready")
 
     DebugGUI.SetFont("s9 w400 c" C.text, "Consolas")
-    ResultEdit := DebugGUI.Add("Edit", "x" PAD " y206 w" IW " h150 Multi ReadOnly -E0x200 Background" C.panel, "Ready...")
-    try DllCall("uxtheme\SetWindowTheme", "ptr", ResultEdit.Hwnd, "str", "DarkMode_Explorer", "str", "")
+    ResultEdit := DebugGUI.Add("Edit", "x" PAD " y206 w" IW " h150 Multi ReadOnly -E0x200 Background" C.panel,
+        "Ready...")
+    if isDark
+        try DllCall("uxtheme\SetWindowTheme", "ptr", ResultEdit.Hwnd, "str", "DarkMode_Explorer", "str", "")
 
     ; ---------- Buttons (flat, with hover) ----------
     Buttons := Map()
@@ -574,6 +576,14 @@ RunDebugTest(selected, customCode, ResultEdit) {
                 count := CheckForActiveCards("", &report, true)
                 ResultEdit.Value .= report
 
+            case "Check story map coordinates":
+                ResultEdit.Value .= "Testing all story maps...`n"
+                TestAllStoryMaps()
+
+            case "Check legend stage map coordinates":
+                ResultEdit.Value .= "Testing all legend stage maps...`n"
+                TestAllLegendMaps()
+
             case "Check raid map coordinates":
                 ResultEdit.Value .= "Testing all raid maps...`n"
                 TestAllRaidMaps()
@@ -589,7 +599,7 @@ RunDebugTest(selected, customCode, ResultEdit) {
 
 OpenPrivateServerGuide(*) {
     GuideGUI := Gui("+AlwaysOnTop +Resize", "Ryn's Private Server Guide")
-    GuideGUI.BackColor := "0c000a"
+    GuideGUI.BackColor := Theme_Get("Background")
     GuideGUI.MarginX := 20
     GuideGUI.MarginY := 20
 
@@ -597,15 +607,15 @@ OpenPrivateServerGuide(*) {
     GuideGUI.SetFont("s12 bold", "Segoe UI")
 
     ; Add each step individually
-    GuideGUI.Add("Text", "cWhite", "Step 1. Create a private server")
-    GuideGUI.Add("Text", "cWhite", "Step 2. Name the server however you like")
-    GuideGUI.Add("Text", "cWhite", "Step 3. Configure the private server")
-    GuideGUI.Add("Text", "cWhite", "Step 4. Generate a link for the server")
-    GuideGUI.Add("Text", "cWhite", "Step 5. Paste the link into your browser")
-    GuideGUI.Add("Text", "cWhite", "Step 6. Wait for the link to change into the new version")
-    GuideGUI.Add("Text", "cWhite", "Step 7. Copy the URL")
-    GuideGUI.Add("Text", "cWhite", "Step 8. Paste the URL into the private server section of the macro")
-    GuideGUI.Add("Text", "cWhite", "It should look like this at the end: privateServerLinkCode=12345")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 1. Create a private server")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 2. Name the server however you like")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 3. Configure the private server")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 4. Generate a link for the server")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 5. Paste the link into your browser")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 6. Wait for the link to change into the new version")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 7. Copy the URL")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "Step 8. Paste the URL into the private server section of the macro")
+    GuideGUI.Add("Text", "c" Theme_Get("Body"), "It should look like this at the end: privateServerLinkCode=12345")
 
     ; Show GUI
     GuideGUI.Show("AutoSize Center")
@@ -613,8 +623,9 @@ OpenPrivateServerGuide(*) {
 
 MainUI.SetFont("s9 Bold c" uiTheme[1])
 
-ActiveConfigurationText:= MainUI.Add("Text", "x840 y7 +Center c" uiTheme[1], "Active Configuration: ")
-ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Movement", "Mode", "Placement", "Upgrade", "Recording"])
+ActiveConfigurationText := MainUI.Add("Text", "x840 y7 +Center c" uiTheme[1], "Active Configuration: ")
+ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Movement",
+    "Mode", "Placement", "Upgrade", "Recording"])
 ConfigurationDropdown.OnEvent("Change", UpdateActiveConfiguration)
 
 global guideBtn := MainUI.Add("Button", "x1108 y5 w90 h20", "Guide")
@@ -647,13 +658,16 @@ global MagicTeam := MainUI.Add("DropDownList", "x1270 y471 w45 h180 Choose1 +Cen
 global SwapFromPortal := MainUI.Add("CheckBox", "x1015 y476 cffffff", "Rotate Portals / Infinite when out of portals")
 
 PlacementPatternText := MainUI.Add("Text", "x815 y390 w125 h20", "Placement Pattern")
-global PlacementPatternDropdown := MainUI.Add("DropDownList", "x825 y410 w100 h180 Choose1 +Center", ["Circle", "Custom", "Grid", "3x3 Grid", "Spiral", "Up and Down", "Random"])
+global PlacementPatternDropdown := MainUI.Add("DropDownList", "x825 y410 w100 h180 Choose1 +Center", ["Circle",
+    "Custom", "Grid", "3x3 Grid", "Spiral", "Up and Down", "Random"])
 
 PlaceSpeedText := MainUI.Add("Text", "x1030 y390 w115 h20", "Placement Speed")
-global PlaceSpeed := MainUI.Add("DropDownList", "x1035 y410 w100 h180 Choose3 +Center", ["Super Fast (1s)", "Fast (1.5s)", "Default (2s)", "Slow (2.5s)", "Very Slow (3s)", "Toaster (4s)"])
+global PlaceSpeed := MainUI.Add("DropDownList", "x1035 y410 w100 h180 Choose3 +Center", ["Super Fast (1s)",
+    "Fast (1.5s)", "Default (2s)", "Slow (2.5s)", "Very Slow (3s)", "Toaster (4s)"])
 
 PlacementSelectionText := MainUI.Add("Text", "x1235 y390 w125 h20", "Placement Order")
-global PlacementSelection := MainUI.Add("DropDownList", "x1240 y410 w100 h180 Choose1 +Center", ["Default", "By Priority"])
+global PlacementSelection := MainUI.Add("DropDownList", "x1240 y410 w100 h180 Choose1 +Center", ["Default",
+    "By Priority"])
 
 ;=== Card Config GUI ===
 global CardBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Card Priority")
@@ -664,9 +678,6 @@ FoolsHuntCardButton.OnEvent("Click", (*) => SwitchCardMode("Fool's Hunt", true))
 
 ; === Event Configuration ===
 global EventBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Event Configuration")
-global HalloweenRestart := MainUI.Add("Checkbox", "x825 y110 Hidden cffffff", "Restart Halloween on wave: " )
-global HalloweenRestartTimer := MainUI.Add("Edit", "x1060 y108 Hidden w45 h20 Hidden cBlack Number", "58")
-global HalloweenPremadeMovement := MainUI.Add("Checkbox", "x825 y140 Hidden cffffff", "Enable premade movement for Halloween")
 
 placementSaveText := MainUI.Add("Text", "x807 y451 w80 h20", "Save Config")
 
@@ -714,7 +725,7 @@ global UpgradeBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidde
 global EnableUpgrading := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff Checked", "Enable Upgrading")
 global UnitManagerUpgradeSystem := MainUI.Add("CheckBox", "x825 y130 Hidden cffffff", "Use the Unit Manager to upgrade your units")
 UnitManagerUpgradeSystem.Enabled := false
-global PriorityUpgrade := MainUI.Add("CheckBox", "x825 y150 cffffff Hidden Checked", "Use Unit Priority while upgrading")
+global PriorityUpgrade := MainUI.Add("CheckBox", "x825 y150 cffffff Hidden Checked",  "Use Unit Priority while upgrading")
 
 global ZoomSettingsBorder := MainUI.Add("GroupBox", "x1000 y205 w165 h176 +Center Hidden c" uiTheme[1], "Zoom Tech Settings")
 global ZoomText := MainUI.Add("Text", "x1018 y230 Hidden c" uiTheme[1], "Zoom Level:")
@@ -724,7 +735,8 @@ global ZoomInOption := MainUI.Add("Checkbox", "x1018 y290 Hidden Checked c" uiTh
 global ZoomTeleport := MainUI.Add("Checkbox", "x1018 y320 Hidden Checked c" uiTheme[1], "Teleport to spawn")
 ZoomBox.OnEvent("Change", (*) => ValidateEditBox(ZoomBox))
 
-global MiscSettingsBorder := MainUI.Add("GroupBox", "x1163 y205 w195 h176 +Center Hidden c" uiTheme[1], "Update Settings")
+global MiscSettingsBorder := MainUI.Add("GroupBox", "x1163 y205 w195 h176 +Center Hidden c" uiTheme[1], "Misc Settings"
+)
 global UpdateChecker := MainUI.Add("Checkbox", "x1175 y230 Hidden cffffff Checked", "Enable update checker")
 
 global ModeBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Mode Configuration")
@@ -738,7 +750,8 @@ global PortalLobby := MainUI.Add("CheckBox", "x825 y280 Hidden cffffff", "Starti
 ; === End Unit Config GUI ===
 
 ; === Custom Recording GUI ===
-global RecordBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Recording Configuration")
+global RecordBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1],
+    "Custom Recording Configuration")
 global RecordMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
 global RecordMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
 AddRecordingProfileButton := MainUI.Add("Picture", "x1120 y103 w15 h15 Hidden", Add)
@@ -749,9 +762,12 @@ ImportRecording := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hid
 ImportRecording.OnEvent("Click", ImportRecordings)
 ExportRecording := MainUI.Add("Picture", "x845 y108 w20 h20 +BackgroundTrans Hidden", Export)
 ExportRecording.OnEvent("Click", (*) => ExportRecordings(RecordMapDropdown.Text))
-global ShouldUseRecording := MainUI.Add("CheckBox", "x825 y140 Hidden cffffff", "Use custom recording instead of the default macro")
-global ShouldUseSetup := MainUI.Add("CheckBox", "x825 y170 Hidden cffffff", "Use the macro's setup feature (zoom, walk to custom path)")
-global ShouldHandleGameEnd := MainUI.Add("CheckBox", "x825 y230 Hidden cffffff", "Automatically restart recording when/if the game ends")
+global ShouldUseRecording := MainUI.Add("CheckBox", "x825 y140 Hidden cffffff",
+    "Use custom recording instead of the default macro")
+global ShouldUseSetup := MainUI.Add("CheckBox", "x825 y170 Hidden cffffff",
+    "Use the macro's setup feature (zoom, walk to custom path)")
+global ShouldHandleGameEnd := MainUI.Add("CheckBox", "x825 y230 Hidden cffffff",
+    "Automatically restart recording when/if the game ends")
 global ShouldLoopRecording := MainUI.Add("CheckBox", "x825 y200 Hidden cffffff", "Loop recorded actions infintely")
 RecordStartButton := MainUI.Add("Button", "x1140 y110 w60 h20 Hidden", "Set")
 RecordStartButton.OnEvent("Click", StartRecordingActionsForMap)
@@ -762,7 +778,8 @@ RecordTestButton.OnEvent("Click", (*) => PlayRecordedActions())
 RecordImport := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hidden", Import)
 
 ;=== Custom Walk GUI ===
-global CustomWalkBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Walk Configuration")
+global CustomWalkBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1],
+    "Custom Walk Configuration")
 global WalkMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
 global WalkMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
 WalkMapDropdown.OnEvent("Change", UpdateWalkListView)
@@ -781,19 +798,21 @@ MovementImport.OnEvent("Click", (*) => ImportMovements())
 MovementExport := MainUI.Add("Picture", "x845 y108 w20 h20 +BackgroundTrans Hidden", Export)
 MovementExport.OnEvent("Click", (*) => ExportMovements(WalkMapDropdown.Text))
 
+global WalkTipText := MainUI.Add("Text", "x825 y140 w510 h105 Hidden cffffff",
+    "Useful Information: Press Left Shift to stop recording" .
+    "`n`nNote: Some map movements may be incorrect due to multiple spawn angles" .
+    "`n`nCurrent Recorded Movements:")
 
-global WalkTipText := MainUI.Add("Text", "x825 y140 w510 h105 Hidden cffffff", "Useful Information: Press Left Shift to stop recording" .
-"`n`nNote: Some map movements may be incorrect due to multiple spawn angles" .
-"`n`nCurrent Recorded Movements:")
-
-global WalkListView := MainUI.Add("ListView", "x825 y215 w420 h150 Hidden -Multi cBlack", ["#", "Direction", "Duration", "Delay"])
+global WalkListView := MainUI.Add("ListView", "x825 y215 w420 h150 Hidden -Multi cBlack", ["#", "Direction", "Duration",
+    "Delay"])
 WalkListView.OnEvent("DoubleClick", EditSelectedMovement)
 global WalkRemoveBtn := MainUI.Add("Button", "x1255 y215 w80 h25 Hidden", "Remove")
 WalkRemoveBtn.OnEvent("Click", RemoveSelectedMovement)
 global WalkEditBtn := MainUI.Add("Button", "x1255 y280 w80 h25 Hidden", "Edit")
 WalkEditBtn.OnEvent("Click", EditSelectedMovement)
 ;=== Custom Placement GUI ===
-global CustomPlacementBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Placement Configuration")
+global CustomPlacementBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1],
+    "Custom Placement Configuration")
 
 ; --- Toolbar ---
 global PlacementSettingsImportButton := MainUI.Add("Picture", "x820 y105 w20 h20 +BackgroundTrans Hidden", Import)
@@ -819,7 +838,8 @@ global PlacementDivider := MainUI.Add("Text", "x809 y138 w549 h2 +0x10 Hidden")
 ; --- List (left) ---
 global PlacementListView := MainUI.Add("ListView", "x820 y150 w350 h195 Hidden -Multi cBlack", ["#", "X", "Y"])
 PlacementListView.OnEvent("DoubleClick", EditSelectedPlacement)
-global PlacementStatusText := MainUI.Add("Text", "x820 y353 w350 h18 Hidden cffffff", "0 placements  |  Double-click a row to edit")
+global PlacementStatusText := MainUI.Add("Text", "x820 y353 w350 h18 Hidden cffffff",
+    "0 placements  |  Double-click a row to edit")
 
 ; --- Actions (right) ---
 global PlacementListHeader := MainUI.Add("Text", "x1185 y148 w160 h16 Hidden cffffff", "View List Options")
@@ -843,21 +863,36 @@ PlacementShowButton.OnEvent("Click", (*) => ShowPlacementDots())
 DiscordButton.OnEvent("Click", (*) => OpenDiscord())
 ;--------------SETTINGS--------------;
 MainUI.SetFont("s10 c" uiTheme[6])
-global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts", "Infinity Castle", "Legend Stages", "Portal", "Custom"])
+global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts",
+    "Infinity Castle", "Legend Stages", "Portal", "Custom"])
 global EventDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center Hidden", ["Fool's Hunt"])
-global StoryDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Planet Greenie", "Walled City", "Snowy Town", "Sand Village", "Navy Bay", "Fiend City", "Spirit World", "Ant Kingdom", "Magic Town", "Haunted Academy", "Magic Hills", "Space Center", "Alien Spaceship", "Fabled Kingdom", "Ruined City", "Puppet Island", "Virtual Dungeon", "Snowy Kingdom", "Dungeon Throne", "Mountain Temple", "Rain Village", "Shibuya District"])
-global StoryActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Infinity"])
-global LegendDropDown := MainUI.Add("DropDownlist", "x968 y53 w150 h180 Choose0 +Center", ["Magic Hills", "Spirit Invasion", "Space Center", "Fabled Kingdom", "Ruined City", "Virtual Dungeon", "Dungeon Throne", "Rain Village"] )
-global LegendActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5", "Act 6", "Random"])
-global RaidDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Ant Kingdom", "Sacred Planet", "Strange Town", "Ruined City", "Cursed Festival", "Future City (Tyrant)", "Storm Hideout", "Future City", "Nightmare Train", "Sand Village"])
-global RaidActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3", "Act 4", "Act 5"])
+global StoryDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Planet Greenie",
+    "Walled City", "Snowy Town", "Sand Village", "Navy Bay", "Fiend City", "Spirit World", "Ant Kingdom", "Magic Town",
+    "Haunted Academy", "Magic Hills", "Space Center", "Alien Spaceship", "Fabled Kingdom", "Ruined City",
+    "Puppet Island", "Virtual Dungeon", "Snowy Kingdom", "Dungeon Throne", "Mountain Temple", "Rain Village",
+    "Shibuya District"])
+global StoryActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3",
+    "Act 4", "Act 5", "Act 6", "Infinity"])
+global LegendDropDown := MainUI.Add("DropDownlist", "x968 y53 w150 h180 Choose0 +Center", ["Magic Hills",
+    "Spirit Invasion", "Space Center", "Fabled Kingdom", "Ruined City", "Virtual Dungeon", "Dungeon Throne",
+    "Rain Village"])
+global LegendActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3",
+    "Act 4", "Act 5", "Act 6", "Random"])
+global RaidDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Ant Kingdom", "Sacred Planet",
+    "Strange Town", "Ruined City", "Cursed Festival", "Future City (Tyrant)", "Storm Hideout", "Future City",
+    "Nightmare Train", "Sand Village"])
+global RaidActDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Act 1", "Act 2", "Act 3",
+    "Act 4", "Act 5"])
 global InfinityCastleDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose1 +Center", ["Normal", "Hard"])
-global PortalDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Alien Portal", "Puppet Portal", "Demon Leader's Portal", "Eclipse Portal", "Noble Portal", "Shibuya Portal"])
-global PortalRoleDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Creating", "Joining", "Solo"])
-global ContractPageDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Page 1", "Page 2","Page 3","Page 4","Page 5","Page 6", "Page 4-5"])
-global ContractJoinDropdown := MainUI.Add("DropDownList", "x1057 y53 w120 h180 Choose0 +Center", ["Hosting", "Joining", "Solo"])
+global PortalDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Alien Portal",
+    "Puppet Portal", "Demon Leader's Portal", "Eclipse Portal", "Noble Portal", "Shibuya Portal"])
+global PortalRoleDropdown := MainUI.Add("DropDownList", "x1128 y53 w80 h180 Choose0 +Center", ["Creating", "Joining",
+    "Solo"])
+global ContractPageDropdown := MainUI.Add("DropDownList", "x968 y53 w80 h180 Choose0 +Center", ["Page 1", "Page 2",
+    "Page 3", "Page 4", "Page 5", "Page 6", "Page 4-5"])
+global ContractJoinDropdown := MainUI.Add("DropDownList", "x1057 y53 w120 h180 Choose0 +Center", ["Hosting", "Joining",
+    "Solo"])
 global ConfirmButton := MainUI.Add("Button", "x1218 y53 w80 h25", "Confirm")
-
 
 LegendDropDown.Visible := false
 LegendActDropdown.Visible := false
@@ -900,22 +935,22 @@ AddUnitCard(MainUI, index, x, y) {
     }
 
     ; Background and borders
-    unit.Background     := AddText(x, y, 550, 45, "+Background" uiTheme[4])
-    unit.BorderTop      := AddText(x, y, 550, 2, "+Background" uiTheme[3])
-    unit.BorderBottom   := AddText(x, y + 45, 552, 2, "+Background" uiTheme[3])
-    unit.BorderLeft     := AddText(x, y, 2, 45, "+Background" uiTheme[3])
-    unit.BorderRight    := AddText(x + 550, y, 2, 45, "+Background" uiTheme[3])
-    unit.BorderRight2   := AddText(x + 250, y, 2, 45, "+Background" uiTheme[3])
+    unit.Background := AddText(x, y, 550, 45, "+Background" uiTheme[4])
+    unit.BorderTop := AddText(x, y, 550, 2, "+Background" uiTheme[3])
+    unit.BorderBottom := AddText(x, y + 45, 552, 2, "+Background" uiTheme[3])
+    unit.BorderLeft := AddText(x, y, 2, 45, "+Background" uiTheme[3])
+    unit.BorderRight := AddText(x + 550, y, 2, 45, "+Background" uiTheme[3])
+    unit.BorderRight2 := AddText(x + 250, y, 2, 45, "+Background" uiTheme[3])
     unit.BorderRight3 := AddText(x + 420, y, 2, 45, "+Background" uiTheme[3])
 
     ; Main Labels
     MainUI.SetFont("s11 Bold c" uiTheme[1])
-    unit.EnabledTitle   := AddText(x + 30, y + 13, 60, 25, "+BackgroundTrans", "Unit " index)
+    unit.EnabledTitle := AddText(x + 30, y + 13, 60, 25, "+BackgroundTrans", "Unit " index)
 
     ; Unit Configuration
     MainUI.SetFont("s9 c" uiTheme[1])
-    unit.PlacementText        := AddText(x + 90, y + 2, 80, 20, "+BackgroundTrans", "Placements")
-    unit.PriorityText         := AddText(x + 185, y + 2, 60, 20, "BackgroundTrans", "Priority")
+    unit.PlacementText := AddText(x + 90, y + 2, 80, 20, "+BackgroundTrans", "Placements")
+    unit.PriorityText := AddText(x + 185, y + 2, 60, 20, "BackgroundTrans", "Priority")
 
     if (!AutoUpgradeDisabled) {
         unit.AutoUpgradeText := AddText(x + 275, y + 25, 250, 20, "BackgroundTrans", "Enable Auto Upgrade")
@@ -933,12 +968,11 @@ AddUnitCard(MainUI, index, x, y) {
     return unit
 }
 
-
 ;Create Unit slot
 y_start := 85
 y_spacing := 50
-Loop 6 {
-    AddUnitCard(MainUI, A_Index, 808, y_start + ((A_Index-1)*y_spacing))
+loop 6 {
+    AddUnitCard(MainUI, A_Index, 808, y_start + ((A_Index - 1) * y_spacing))
 }
 
 enabled1 := MainUI.Add("CheckBox", "x818 y100 w15 h15", "")
@@ -976,56 +1010,56 @@ upgradeLimitEnabled6 := MainUI.Add("CheckBox", "x1235 y355 w15 h15 " (unitUpgrad
 MainUI.SetFont("s8 c" uiTheme[6])
 
 ; Placement dropdowns
-Placement1 := MainUI.Add("DropDownList", "x918 y105 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
-Placement2 := MainUI.Add("DropDownList", "x918 y155 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
-Placement3 := MainUI.Add("DropDownList", "x918 y205 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
-Placement4 := MainUI.Add("DropDownList", "x918 y255 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
-Placement5 := MainUI.Add("DropDownList", "x918 y305 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
-Placement6 := MainUI.Add("DropDownList", "x918 y355 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Placement1 := MainUI.Add("DropDownList", "x918 y105 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+Placement2 := MainUI.Add("DropDownList", "x918 y155 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+Placement3 := MainUI.Add("DropDownList", "x918 y205 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+Placement4 := MainUI.Add("DropDownList", "x918 y255 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+Placement5 := MainUI.Add("DropDownList", "x918 y305 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
+Placement6 := MainUI.Add("DropDownList", "x918 y355 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
 
-Priority1 := MainUI.Add("DropDownList", "x980 y105 w35 h180 Choose1 +Center", ["1","2","3","4","5","6"])
+Priority1 := MainUI.Add("DropDownList", "x980 y105 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
 Priority1.OnEvent("Change", (*) => OnPriorityChange("Placement", 1, Priority1.Value))
 
-Priority2 := MainUI.Add("DropDownList", "x980 y155 w35 h180 Choose2 +Center", ["1","2","3","4","5","6"])
+Priority2 := MainUI.Add("DropDownList", "x980 y155 w35 h180 Choose2 +Center", ["1", "2", "3", "4", "5", "6"])
 Priority2.OnEvent("Change", (*) => OnPriorityChange("Placement", 2, Priority2.Value))
 
-Priority3 := MainUI.Add("DropDownList", "x980 y205 w35 h180 Choose3 +Center", ["1","2","3","4","5","6"])
+Priority3 := MainUI.Add("DropDownList", "x980 y205 w35 h180 Choose3 +Center", ["1", "2", "3", "4", "5", "6"])
 Priority3.OnEvent("Change", (*) => OnPriorityChange("Placement", 3, Priority3.Value))
 
-Priority4 := MainUI.Add("DropDownList", "x980 y255 w35 h180 Choose4 +Center", ["1","2","3","4","5","6"])
+Priority4 := MainUI.Add("DropDownList", "x980 y255 w35 h180 Choose4 +Center", ["1", "2", "3", "4", "5", "6"])
 Priority4.OnEvent("Change", (*) => OnPriorityChange("Placement", 4, Priority4.Value))
 
-Priority5 := MainUI.Add("DropDownList", "x980 y305 w35 h180 Choose5 +Center", ["1","2","3","4","5","6"])
+Priority5 := MainUI.Add("DropDownList", "x980 y305 w35 h180 Choose5 +Center", ["1", "2", "3", "4", "5", "6"])
 Priority5.OnEvent("Change", (*) => OnPriorityChange("Placement", 5, Priority5.Value))
 
-Priority6 := MainUI.Add("DropDownList", "x980 y355 w35 h180 Choose6 +Center", ["1","2","3","4","5","6"])
+Priority6 := MainUI.Add("DropDownList", "x980 y355 w35 h180 Choose6 +Center", ["1", "2", "3", "4", "5", "6"])
 Priority6.OnEvent("Change", (*) => OnPriorityChange("Placement", 6, Priority6.Value))
 
-UpgradePriority1 := MainUI.Add("DropDownList", "x1020 y105 w35 h180 Choose1 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority1 := MainUI.Add("DropDownList", "x1020 y105 w35 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6", ""])
 UpgradePriority1.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 1, UpgradePriority1.Text))
 
-UpgradePriority2 := MainUI.Add("DropDownList", "x1020 y155 w35 h180 Choose2 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority2 := MainUI.Add("DropDownList", "x1020 y155 w35 h180 Choose2 +Center", ["1", "2", "3", "4", "5", "6", ""])
 UpgradePriority2.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 2, UpgradePriority2.Text))
 
-UpgradePriority3 := MainUI.Add("DropDownList", "x1020 y205 w35 h180 Choose3 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority3 := MainUI.Add("DropDownList", "x1020 y205 w35 h180 Choose3 +Center", ["1", "2", "3", "4", "5", "6", ""])
 UpgradePriority3.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 3, UpgradePriority3.Text))
 
-UpgradePriority4 := MainUI.Add("DropDownList", "x1020 y255 w35 h180 Choose4 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority4 := MainUI.Add("DropDownList", "x1020 y255 w35 h180 Choose4 +Center", ["1", "2", "3", "4", "5", "6", ""])
 UpgradePriority4.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 4, UpgradePriority4.Text))
 
-UpgradePriority5 := MainUI.Add("DropDownList", "x1020 y305 w35 h180 Choose5 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority5 := MainUI.Add("DropDownList", "x1020 y305 w35 h180 Choose5 +Center", ["1", "2", "3", "4", "5", "6", ""])
 UpgradePriority5.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 5, UpgradePriority5.Text))
 
-UpgradePriority6 := MainUI.Add("DropDownList", "x1020 y355 w35 h180 Choose6 +Center", ["1","2","3","4","5","6",""])
+UpgradePriority6 := MainUI.Add("DropDownList", "x1020 y355 w35 h180 Choose6 +Center", ["1", "2", "3", "4", "5", "6", ""])
 UpgradePriority6.OnEvent("Change", (*) => OnPriorityChange("Upgrade", 6, UpgradePriority6.Text))
 
 ; Upgrade Limit
-UpgradeLimit1 := MainUI.Add("DropDownList", "x1310 y105 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
-UpgradeLimit2 := MainUI.Add("DropDownList", "x1310 y155 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
-UpgradeLimit3 := MainUI.Add("DropDownList", "x1310 y205 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
-UpgradeLimit4 := MainUI.Add("DropDownList", "x1310 y255 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
-UpgradeLimit5 := MainUI.Add("DropDownList", "x1310 y305 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
-UpgradeLimit6 := MainUI.Add("DropDownList", "x1310 y355 w45 h180 Choose1 +Center", ["0","1","2","3","4","5","6"])
+UpgradeLimit1 := MainUI.Add("DropDownList", "x1310 y105 w45 h180 Choose1 +Center", ["0", "1", "2", "3", "4", "5", "6"])
+UpgradeLimit2 := MainUI.Add("DropDownList", "x1310 y155 w45 h180 Choose1 +Center", ["0", "1", "2", "3", "4", "5", "6"])
+UpgradeLimit3 := MainUI.Add("DropDownList", "x1310 y205 w45 h180 Choose1 +Center", ["0", "1", "2", "3", "4", "5", "6"])
+UpgradeLimit4 := MainUI.Add("DropDownList", "x1310 y255 w45 h180 Choose1 +Center", ["0", "1", "2", "3", "4", "5", "6"])
+UpgradeLimit5 := MainUI.Add("DropDownList", "x1310 y305 w45 h180 Choose1 +Center", ["0", "1", "2", "3", "4", "5", "6"])
+UpgradeLimit6 := MainUI.Add("DropDownList", "x1310 y355 w45 h180 Choose1 +Center", ["0", "1", "2", "3", "4", "5", "6"])
 
 LoadUnitSettingsByMode()
 
@@ -1041,6 +1075,10 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
         }
     }
 }
+
+; Register every control with a colour role, then apply the saved theme (colours + title font)
+Theme_BindMainUI()
+Theme_Apply()
 
 MainUI.Show("w1366 h700")
 ;WinMove(0, 0, , , "ahk_id " MainUIHwnd)
@@ -1086,7 +1124,7 @@ AddToLog(current) {
 getElapsedTime() {
     global StartTime
     ElapsedTime := A_TickCount - StartTime
-    Minutes := Mod(ElapsedTime // 60000, 60)  
+    Minutes := Mod(ElapsedTime // 60000, 60)
     Seconds := Mod(ElapsedTime // 1000, 60)
     return Format("{:02}:{:02}", Minutes, Seconds)
 }
@@ -1165,7 +1203,7 @@ IsFullscreenWin(hwnd) {
 
 moveRobloxWindow() {
     global MainUIHwnd, offsetX, offsetY, rblxID
-    
+
     if !WinExist(rblxID) {
         AddToLog("Waiting for Roblox window...")
         return
@@ -1173,23 +1211,23 @@ moveRobloxWindow() {
 
     ; First ensure correct size
     sizeDown()
-    
+
     ; Then move relative to main UI
     WinGetPos(&x, &y, &w, &h, MainUIHwnd)
-    WinMove(x + offsetX, y + offsetY,,, rblxID)
+    WinMove(x + offsetX, y + offsetY, , , rblxID)
     WinActivate(rblxID)
 }
 
 forceRobloxSize() {
     global rblxID
-    
+
     if !WinExist(rblxID) {
         checkCount := 0
-        While !WinExist(rblxID) {
+        while !WinExist(rblxID) {
             Sleep(5000)
-            if(checkCount >= 5) {
+            if (checkCount >= 5) {
                 AddToLog("Attempting to locate the Roblox window")
-            } 
+            }
             checkCount += 1
             if (checkCount > 12) { ; Give up after 1 minute
                 AddToLog("Could not find Roblox window")
@@ -1254,7 +1292,8 @@ InitControlGroups() {
     if (autoUpgradeDisabled)
         Blacklist.Push("upgradeEnabled")
 
-    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled", "upgradeLimit", "abilityEnabled"] {
+    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled",
+        "upgradeLimit", "abilityEnabled"] {
         loop 6 {
             varName := name . A_Index
             baseName := RegExReplace(varName, "\d+$")
@@ -1297,8 +1336,7 @@ InitControlGroups() {
     ]
 
     ControlGroups["Event"] := [
-        EventBorder,
-        HalloweenRestart, HalloweenRestartTimer, HalloweenPremadeMovement
+        EventBorder
     ]
 
     ControlGroups["Story"] := [
@@ -1316,7 +1354,8 @@ InitControlGroups() {
     ]
 
     ControlGroups["Movement"] := [
-        CustomWalkBorder, WalkMapText, WalkMapDropdown, WalkTipText, WalkListView, WalkRemoveBtn, WalkEditBtn, MovementSetButton, MovementClearButton, MovementTestButton,
+        CustomWalkBorder, WalkMapText, WalkMapDropdown, WalkTipText, WalkListView, WalkRemoveBtn, WalkEditBtn,
+        MovementSetButton, MovementClearButton, MovementTestButton,
         MovementImport, MovementExport
     ]
 
@@ -1417,14 +1456,14 @@ ValidateWebhook() {
     global WebhookURLBox
 
     url := WebhookURLBox.Value
-    
+
     if (url == "") {
         WebhookEnabled.Value := false
         WebhookURLBox.Value := ""
         MsgBox("Webhook URL cannot be blank. Please enter a valid Webhook URL.", "Missing URL", "+0x1000")
         return
     }
-    
+
     if (!RegExMatch(url, "^https://discord\.com/api/webhooks/.*")) {
         WebhookEnabled.Value := false
         WebhookURLBox.Value := ""
@@ -1436,8 +1475,7 @@ ValidateWebhook() {
 ValidateEditBox(ctrl) {
     val := Trim(ctrl.Value)
     ; If the input is not a number, reset to 0
-    if !IsInteger(val)
-    {
+    if !IsInteger(val) {
         ctrl.Value := "0"
         return
     }

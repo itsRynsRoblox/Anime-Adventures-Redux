@@ -165,3 +165,57 @@ WalkToStoryRoom(angle) {
             Sleep (1000) 
     }
 }
+
+TestAllStoryMaps() {
+    ; List of all maps in the order you want to test them
+    maps := [
+        "Planet Greenie",
+        "Snowy Town",
+        "Sand Village",
+        "Navy Bay",
+        "Fiend City",
+        "Spirit World",
+        "Ant Kingdom",
+        "Magic Town",
+        "Haunted Academy",
+        "Magic Hills",
+        "Space Center",
+        "Alien Spaceship",
+        "Fabled Kingdom",
+        "Ruined City",
+        "Puppet Island",
+        "Virtual Dungeon",
+        "Snowy Kingdom",
+        "Dungeon Throne",
+        "Mountain Temple",
+        "Rain Village",
+        "Shibuya District"
+    ]
+
+    for mapName in maps {
+        data := GetStoryMap(mapName)
+        if !data {
+            continue
+        }
+
+        if (!WinActive(rblxID)) {
+            AddToLog("Stopped testing because the game window is no longer active.")
+            return
+        }
+
+        AddToLog("Testing map: " mapName)
+
+        ; Scroll down to the map
+        ScrollDown(data.scrolls)
+
+        ; Click the map
+        FixClick(data.x, data.y)
+        Sleep(800)
+
+        ; Scroll all the way back up
+        ScrollUp(data.scrolls)
+        Sleep(400)
+    }
+
+    AddToLog("Finished testing all story maps!")
+}
