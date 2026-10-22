@@ -1908,10 +1908,12 @@ RestartStage() {
     }
 
     if (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt" && BringOwnTeam.Value) {
+        TimerManager.Pause("Teleport Failsafe")
         CoordMode("Mouse", "Window")
         ClickAndHoldExit()
         CoordMode("Mouse", "Client")
         Sleep(1000)
+        TimerManager.Resume("Teleport Failsafe")
     }
 
     currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
@@ -1973,7 +1975,7 @@ Reconnect(force := false) {
                 }
             }
         } else {
-            Run("roblox://placeID=12886143095")
+            Run("roblox://placeID=8304191830")
         }
 
         AddToLog("Reconnecting to " GameName "...")

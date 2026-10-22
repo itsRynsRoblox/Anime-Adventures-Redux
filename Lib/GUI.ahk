@@ -6,7 +6,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.1"
+global version := "v0.1.2"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -219,26 +219,189 @@ loop 7 {
 ; ========== Transparency ==========
 WinSetTransColor(uiColors["RobloxBox"], MainUI)
 
+
+
+
 OpenGuide(*) {
-    GuideGUI := Gui("+AlwaysOnTop")
-    GuideGUI.SetFont("s10 bold", "Segoe UI")
-    GuideGUI.Title := "Ryn's " GameName " Guide"
+    global GameName
 
-    GuideGUI.BackColor := "0c000a"
-    GuideGUI.MarginX := 20
+    GuideGUI := Gui("+AlwaysOnTop +Resize", "Ryn's " GameName " Setup Guide")
+    GuideGUI.BackColor := "111318"
+    GuideGUI.MarginX := 24
     GuideGUI.MarginY := 20
+    GuideGUI.SetFont("s10", "Segoe UI")
 
-    ; Add Guide content
+    ; ── Header ──────────────────────────────────────────
     GuideGUI.SetFont("s16 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y20 w700 cFFFFFF", "Ryn's Setup Guide")
 
-    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "1 - In your AA settings make sure you have these 2 settings set to this")
-    GuideGUI.Add("Picture", "x100 w600 h160 cWhite +Center", "Images\aasettings.png")
-    GuideGUI.Add("Picture", "x50 w700 cWhite +Center", "Images\graphics1.png")
-    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "2 - Set up the unit setup however you want, however I'd avoid hill only units`nif you can since it might break")
-    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "3 - Rejoin Anime Adventures to reset the camera and press F2 to start the macro. Good luck!" )
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y52 w700 c9298A5",
+        "Follow these steps before starting the macro.")
 
-    GuideGUI.Show("w800")
+    GuideGUI.Add("Text", "x24 y82 w700 h2 0x10")
+
+    y := 102
+
+    ; ── Step 1: Windows Display Settings ────────────────
+    GuideGUI.SetFont("s12 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+        "01  |  Configure Windows Display Settings")
+
+    y += 32
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+        "Open Windows Settings > System > Display and configure the following:")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Display resolution: 1920 × 1080 (Recommended)")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Scale: 100%")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "HDR: Disabled")
+
+    y += 38
+
+    GuideGUI.Add("Text", "x24 y" y " w700 h2 0x10")
+    y += 22
+
+    ; ── Step 2: Roblox Settings ─────────────────────────
+    GuideGUI.SetFont("s12 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+        "02  |  Configure Roblox Settings")
+
+    y += 32
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+        "Open the Roblox in-game settings menu and configure the following:")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Camera Mode: Default (Classic)")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Graphics Mode: Manual")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Graphics Quality: Lowest")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Fullscreen: Disabled")
+
+    y += 38
+
+    GuideGUI.Add("Text", "x24 y" y " w700 h2 0x10")
+    y += 22
+
+    ; ── Step 3: Anime Adventures Settings ───────────────
+    GuideGUI.SetFont("s12 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+        "03  |  Configure Anime Adventures Settings")
+
+    y += 32
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+        "Open Anime Adventures settings and make sure these two settings are configured correctly.")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Disable Auto-Open Upgrade UI")
+
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c8B9DFF BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 cFFFFFF BackgroundTrans",
+        "Show Upgrade UI on Left")
+
+    y += 38
+
+    GuideGUI.Add("Text", "x24 y" y " w700 h2 0x10")
+    y += 22
+
+    ; ── Step 4: Unit Setup ──────────────────────────────
+    GuideGUI.SetFont("s12 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y" y " w700 c8B9DFF",
+        "04  |  Set Up Your Units")
+
+    y += 32
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x44 y" y " w660 cC0C4CE",
+        "Set up your unit placements however you prefer. However, avoid using hill-only units if possible, as there is no dedicated hill unit support."
+    )
+
+    y += 62
+
+    ; ── Footer ──────────────────────────────────────────
+    GuideGUI.Add("Text", "x24 y" y " w700 h2 0x10")
+    y += 18
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x24 y" y " w700 Center c8B9DFF",
+        "You're all set. Good luck!")
+
+    y += 42
+
+    ; ── Show Guide ──────────────────────────────────────
+    GuideGUI.Show("w748 h" y)
 }
+
+
+
 
 OpenDebugMenu(*) {
     static DebugGUI := ""

@@ -3,6 +3,31 @@
 SendMode "Event"
 TraySetIcon("Images\Icon.ico")
 
+/*if !A_IsAdmin {
+    result := MsgBox(
+        "Some features may require administrator privileges to work correctly.`n`n"
+        "Would you like to restart the macro as an administrator?`n`n"
+        "• Yes — Restart with administrator privileges`n"
+        "• No — Continue without administrator privileges",
+        "Administrator Mode",
+        "YesNo Icon!"
+    )
+
+    if (result = "Yes") {
+        try {
+            Run('*RunAs "' A_ScriptFullPath '"')
+            ExitApp
+        } catch {
+            MsgBox(
+                "Unable to restart as administrator.`n`n"
+                "You can continue without administrator privileges.",
+                "Administrator Mode",
+                "Iconx"
+            )
+        }
+    }
+}*/
+
 global scriptInitialized := false
 
 ; === Testing and Debugging ===
