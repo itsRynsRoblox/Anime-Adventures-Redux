@@ -747,7 +747,10 @@ CaptchaDetect(x, y, w, h, inputX, inputY) {
     loop 10 {
         try {
             FT_GetOffset(&ocrDX, &ocrDY) ; [Window follow] OCR area follows Roblox
-            result := OCR.FromRect(x + ocrDX, y + ocrDY, w, h, "FirstFromAvailableLanguages")
+            result := OCR.FromRect(x + ocrDX, y + ocrDY, w, h, "FirstFromAvailableLanguages", {
+                grayscale: true,
+                scale: 2.0
+            })
 
             if result {
                 ; Get text before any linebreak

@@ -399,14 +399,7 @@ BasicSetup(usedButton := false) {
     Sleep 250
     
     if (!StartWalk(usedButton)) {
-        if (ModeDropdown.Text = "Event") {
-            if (!firstStartup) {
-                return
-            }
-            HandleEventMovement()
-        } else {
-            HandleMapMovement(currentMap)
-        }
+        HandleMapMovement(currentMap)
     }
 
     if (!usedButton) {

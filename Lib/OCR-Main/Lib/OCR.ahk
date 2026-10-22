@@ -1038,17 +1038,14 @@ class OCR {
      * @param Options OCR options {lang, scale, grayscale, invertcolors, rotate, flip, x, y, w, h, decoder}. 
      * @returns {OCR.Result} 
      */
-    static FromRect(x, y, w, h, Options:=0) {
-        local transform := 0, result
-        if IsObject(Options)
-            Options := Options.Clone()
-        this.__ExtractTransformParameters(Options, &transform)
-        this.__DeleteProps(Options, "scale", "invertcolors", "grayscale")
+    static FromRect(x, y?, w?, h?, lang?, transform := 1) {
+        this.__ExtractTransformParameters(x, &transform)
+        this.__ExtractNamedParameters(x, "y", &y, "w", &w, "h", &h, "lang", &lang, "x", &x)
         local scale := transform.scale
-            , hBitmap := this.CreateHBitmap(X, Y, W, H,, scale)
-            , SoftwareBitmap := this.HBitmapToSoftwareBitmap(hBitmap,, transform)
-            , result := this(SoftwareBitmap, Options)
-        return this.NormalizeCoordinates(result, scale, x, y)
+            , hBitmap := this.CreateHBitmap(X, Y, W, H, , scale)
+            , result := this(this.HBitmapToSoftwareBitmap(hBitmap, , transform), lang?)
+        result.Relative := { Screen: { x: x, y: y, w: w, h: h } }
+        return this.NormalizeCoordinates(result, scale)
     }
 
     /**

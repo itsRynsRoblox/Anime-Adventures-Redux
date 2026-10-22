@@ -6,9 +6,3 @@ StartEvent() {
             StartFoolsHunt()
     }
 }
-
-HandleEventMovement() {
-    switch (EventDropdown.Text) {
-
-    }
-}
