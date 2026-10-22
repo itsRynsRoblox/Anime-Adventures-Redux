@@ -13,10 +13,8 @@
     },
     "Modes": {
         "Events": {
-            "Halloween": {
-                "Restart": 0,
-                "Use_Premade_Movement": 0,
-                "Wave": "58"
+            "Fools_Hunt": {
+                "Bring_Own_Team": 0
             }
         },
         "Portals": {}
@@ -27,7 +25,7 @@
         "Slot_1_Placements": 1,
         "Slot_1_Priority": 1,
         "Slot_1_Upgrade_Enabled": 0,
-        "Slot_1_Upgrade_Limit": "",
+        "Slot_1_Upgrade_Limit": "0",
         "Slot_1_Upgrade_Limit_Enabled": 0,
         "Slot_1_Upgrade_Priority": "1",
         "Slot_2_Ability_Enabled": 0,
@@ -35,7 +33,7 @@
         "Slot_2_Placements": 1,
         "Slot_2_Priority": 2,
         "Slot_2_Upgrade_Enabled": 0,
-        "Slot_2_Upgrade_Limit": "",
+        "Slot_2_Upgrade_Limit": "0",
         "Slot_2_Upgrade_Limit_Enabled": 0,
         "Slot_2_Upgrade_Priority": "2",
         "Slot_3_Ability_Enabled": 0,
@@ -43,7 +41,7 @@
         "Slot_3_Placements": 1,
         "Slot_3_Priority": 3,
         "Slot_3_Upgrade_Enabled": 0,
-        "Slot_3_Upgrade_Limit": "",
+        "Slot_3_Upgrade_Limit": "0",
         "Slot_3_Upgrade_Limit_Enabled": 0,
         "Slot_3_Upgrade_Priority": "3",
         "Slot_4_Ability_Enabled": 0,
@@ -51,7 +49,7 @@
         "Slot_4_Placements": 1,
         "Slot_4_Priority": 4,
         "Slot_4_Upgrade_Enabled": 0,
-        "Slot_4_Upgrade_Limit": "",
+        "Slot_4_Upgrade_Limit": "0",
         "Slot_4_Upgrade_Limit_Enabled": 0,
         "Slot_4_Upgrade_Priority": "4",
         "Slot_5_Ability_Enabled": 0,
@@ -59,7 +57,7 @@
         "Slot_5_Placements": 1,
         "Slot_5_Priority": 5,
         "Slot_5_Upgrade_Enabled": 0,
-        "Slot_5_Upgrade_Limit": "",
+        "Slot_5_Upgrade_Limit": "0",
         "Slot_5_Upgrade_Limit_Enabled": 0,
         "Slot_5_Upgrade_Priority": "5",
         "Slot_6_Ability_Enabled": 0,
@@ -67,7 +65,7 @@
         "Slot_6_Placements": 1,
         "Slot_6_Priority": 6,
         "Slot_6_Upgrade_Enabled": 0,
-        "Slot_6_Upgrade_Limit": "",
+        "Slot_6_Upgrade_Limit": "0",
         "Slot_6_Upgrade_Limit_Enabled": 0,
         "Slot_6_Upgrade_Priority": "6"
     },

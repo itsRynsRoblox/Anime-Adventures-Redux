@@ -36,7 +36,7 @@ global cardTierVars := Map(
 ; extra   : optional Map of overrides:
 ;             "region"    [x1, y1, x2, y2] search area      (default [209,203,652,404])
 ;             "pickDelay" ms to wait after picking          (default 5000)
-;             "tiers"     Map card -> array of tier var names (replaces cardTierVars)
+;             "tiers"     Map card -> array of tier var names
 RegisterCardMode(modeName, options, extra := "") {
     key := RegExReplace(modeName, "[^\w]", "")
 
@@ -499,50 +499,67 @@ LogPriorityOrder() {
     AddToLog("Current Priority Order (" currentCardMode "): " text)
 }
 
-ShowOCRRegions(duration := 5000) {
-    winTitle := "ahk_exe RobloxPlayerBeta.exe"   ; change to match your game window
+ShowOCRRegions(regions := 0, duration := 5000, winTitle := "ahk_exe RobloxPlayerBeta.exe") {
 
-    if (!WinExist(winTitle)) {
+    if !WinExist(winTitle) {
         MsgBox("Game window not found: " winTitle)
         return
     }
-    WinGetClientPos(&offX, &offY, , , winTitle)   ; client area's top-left on screen
 
-    ; Client coords from the region picker: [x1, y1, x2, y2]
-    regions := [
-        [191, 227, 318, 258],  ; Card 1
-        [336, 230, 463, 258],  ; Card 2
-        [481, 229, 609, 255]   ; Card 3
-        ; [x1, y1, x2, y2]     ; Card 4 (add later)
-    ]
+    ; Get the client area's top-left screen position.
+    WinGetClientPos(&offX, &offY, , , winTitle)
+
+    ; If no custom regions were supplied, use the default OCR regions.
+    if !regions {
+        regions := [
+            [191, 227, 318, 258], ; Card 1
+            [336, 230, 463, 258], ; Card 2
+            [481, 229, 609, 255], ; Card 3
+            [226, 97, 577, 148],
+            [80, 85, 739, 224]    ; Card 4
+        ]
+    }
 
     allGuis := []
     thick := 2
 
     for r in regions {
+        ; Convert client-relative coordinates to screen coordinates.
         x1 := r[1] + offX
         y1 := r[2] + offY
         x2 := r[3] + offX
         y2 := r[4] + offY
 
-        edges := [[x1, y1, x2 - x1, thick],           ; top
-        [x1, y2 - thick, x2 - x1, thick],   ; bottom
-        [x1, y1, thick, y2 - y1],           ; left
-        [x2 - thick, y1, thick, y2 - y1]]   ; right
+        width := x2 - x1
+        height := y2 - y1
+
+        if width <= 0 || height <= 0
+            continue
+
+        ; Rectangle edges: top, bottom, left, right.
+        edges := [
+            [x1, y1, width, thick],
+            [x1, y2 - thick, width, thick],
+            [x1, y1, thick, height],
+            [x2 - thick, y1, thick, height]
+        ]
 
         for e in edges {
-            g := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")  ; click-through
+            g := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
             g.BackColor := "Red"
-            g.Show("x" e[1] " y" e[2] " w" e[3] " h" e[4] " NoActivate")
+            g.Show("x" e[1] " y" e[2]
+                " w" e[3] " h" e[4] " NoActivate")
             allGuis.Push(g)
         }
     }
 
-    Cleanup() {
+    ; Remove all preview borders after the requested duration.
+    Cleanup(*) {
         for g in allGuis
             g.Destroy()
     }
-    SetTimer(Cleanup, -duration)
+
+    cleanupTimer := SetTimer(Cleanup, -duration)
 }
 
 NormalizeModeName(name) {
@@ -627,8 +644,6 @@ CheckForActiveCards(modeName := "", &report := "", scanAll := false) {
     return activeCount
 }
 
-; Looks for the highest tier of a card. Returns "" if the card has no tiers,
-; "not detected" if it has tiers but none matched, else the tier number.
 DetectCardTier(card, tiers, x1, y1, x2, y2) {
     if !tiers.Has(card)
         return ""

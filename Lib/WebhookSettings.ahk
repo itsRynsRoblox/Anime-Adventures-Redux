@@ -62,16 +62,41 @@ SendWebhookWithTime(isWin, stageLength) {
     macroLength := FormatStageTime(A_TickCount - macroStartTime)
     
     ; Build session data
-    sessionData := "⌛ Macro Runtime: " macroLength "`n"
-    . "⏱️ Stage Length: " stageLength "`n"
-    . "🔄 Current Streak: " (currentStreak > 0 ? currentStreak " Win Streak" : Abs(currentStreak) " Loss Streak") "`n"
-    . ":video_game: Current Mode: " (ModeDropdown.Text = "" ? "No Mode Selected" : GetTextForMode(ModeDropdown.Text)) "`n"
-    . ":white_check_mark: Successful Runs: " Wins "`n"
-    . "❌ Failed Runs: " loss "`n"
-    . ":bar_chart: Total Runs: " (loss+Wins) "`n"
-    . ":scales: Win Rate: " Format("{:.1f}%", (Wins/(Wins+loss))*100) "`n"
-    isWin ? 0x0AB02D : 0xB00A0A,
-    isWin ? "win" : "lose"
+    totalRuns := Wins + loss
+    winRate := totalRuns > 0 ? (Wins / totalRuns) * 100 : 0
+
+    sessionData := "📊 **SESSION SUMMARY**`n"
+        . "⌛ Macro Runtime: " macroLength "`n"
+        . "⏱️ Stage Length: " stageLength "`n"
+
+    ; Current map (only display when one is selected)
+    if (currentMap != "")
+        sessionData .= "🗺️ Current Map: " currentMap "`n"
+
+    ; Mode
+    sessionData .= ":video_game: Current Mode: "
+        . (ModeDropdown.Text = ""
+            ? "No Mode Selected"
+                : GetTextForMode(ModeDropdown.Text)) "`n"
+
+    ; Streak
+    sessionData .= "🔥 Current Streak: "
+        . (currentStreak > 0
+            ? currentStreak " Win Streak"
+                : currentStreak < 0
+                    ? Abs(currentStreak) " Loss Streak"
+                    : "No Active Streak") "`n"
+
+    ; Results
+    sessionData .= "`n📈 **RUN RESULTS**`n"
+        . ":white_check_mark: Successful Runs: " Wins "`n"
+        . "❌ Failed Runs: " loss "`n"
+        . ":bar_chart: Total Runs: " totalRuns "`n"
+        . ":scales: Win Rate: " Format("{:.1f}%", winRate)
+
+    ; Embed color and status
+    embedColor := isWin ? 0x0AB02D : 0xB00A0A
+    embedStatus := isWin ? "win" : "lose"
     
     
     ; Send webhook
@@ -287,8 +312,9 @@ sendDCWebhook() {
 
 }
 
-sendTestWebhook(isVictory := true) {
+sendTestWebhook(isVictory := true, map := "") {
     global Wins := 1
+    global currentMap := map
     SendWebhookWithTime(isVictory, 1)
 }
 

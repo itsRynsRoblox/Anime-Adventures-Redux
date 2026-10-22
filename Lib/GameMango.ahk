@@ -6,6 +6,7 @@ global cachedCardPriorities := Map()
 LoadKeybindSettings()  ; Load saved keybinds
 CheckForUpdates()
 StartRapidOcr()
+UpdatePlacementListView()
 Hotkey(F1Key, (*) => moveRobloxWindow())
 Hotkey(F2Key, (*) => StartMacro())
 Hotkey(F3Key, (*) => Reload())
@@ -16,7 +17,7 @@ F5:: {
 }
 
 F6:: {
-    HandleEndScreen(false)
+    SetUnitCardVisibility(false)
 }
 
 F7:: {
@@ -240,6 +241,12 @@ StartContent(mapName, actName, getMapFunc, getActFunc, mapScrollMousePos, actScr
         AddToLog("Error: Map '" mapName "' not found.")
         return false
     }
+
+    if (CheckForNotification()) {
+        ClickUntilGone(0, 0, 748, 94, 778, 551, ExitNotification, -3, -30)
+        Sleep (1000)
+    }
+
     if Map.scrolls > 0 {
         AddToLog(Format("Scrolling down {} times for {}", Map.scrolls, mapName))
         MouseMove(mapScrollMousePos.x, mapScrollMousePos.y)
@@ -1884,7 +1891,14 @@ RestartStage() {
         TimerManager.Start("Teleport Failsafe", TeleportFailsafeTimer.Value * 1000)
     }
 
-    currentMap := (ModeDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
+    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
+
+    if (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") {
+        CoordMode("Mouse", "Window")
+        ClickAndHoldExit()
+        CoordMode("Mouse", "Client")
+        Sleep(1000)
+    }
 
     ; Wait for loading
     CheckLoaded()
@@ -2019,7 +2033,7 @@ StartSelectedMode() {
         case "Story":
             StartStoryMode()
         case "Raid":
-            StartRaidMode()
+            StartRaidStage()
         case "Custom":
             CustomMode()
         case "Portal":
@@ -2058,29 +2072,6 @@ ValidateMode() {
 
 GetNavKeys() {
     return StrSplit(FileExist("Settings\UINavigation.txt") ? FileRead("Settings\UINavigation.txt", "UTF-8") : "\,#,}", ",")
-}
-
-ClickUntilGone(x, y, searchX1, searchY1, searchX2, searchY2, textToFind, offsetX:=0, offsetY:=0, textToFind2:="") {
-while (ok := FT(&X, &Y, searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind) || textToFind2 && FT(&X, &Y, searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind2)) {
-        if (offsetX != 0 || offsetY != 0) {
-            FixClick(X + offsetX, Y + offsetY)  
-        } else {
-            FixClick(x, y) 
-        }
-        Sleep(1000)
-    }
-}
-
-ClickReplay() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, +120, -35, LobbyText2)
-}
-
-ClickNextLevel() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, +260, -35, LobbyText2)
-}
-
-ClickReturnToLobby() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, 0, -35, LobbyText2)
 }
 
 SetupForInfinite() {
@@ -2240,33 +2231,54 @@ isMenuOpen(name := "") {
 ; -------------------------------------------------
 ; 1. REGION CAPTURE – CLICK TWO CORNERS + COPY TO CLIPBOARD
 ; -------------------------------------------------
-SetRegion() {
-    region := [0, 0, 0, 0]
 
-    ; ---- FIRST CLICK (top-left) ----
+SetRegion(winTitle := "ahk_exe RobloxPlayerBeta.exe") {
+    if !WinExist(winTitle) {
+        MsgBox("Game window not found: " winTitle)
+        return
+    }
+
+    ; Ensure mouse coordinates are relative to the Roblox client.
+    CoordMode("Mouse", "Client")
+
     AddToLog("Click TOP-LEFT of wanted search area")
-    while !GetKeyState("LButton", "P") {
-        Sleep(10)
-    }
-    while GetKeyState("LButton", "P") {
-        Sleep(10)
-    }
-    MouseGetPos(&x1, &y1)
-    AddToLog("Click BOTTOM-RIGHT of wanted search area (top-left: " x1 "," y1 ")")
 
-    ; ---- SECOND CLICK (bottom-right) ----
-    while !GetKeyState("LButton", "P") {
+    ; First click
+    while !GetKeyState("LButton", "P")
         Sleep(10)
-    }
-    while GetKeyState("LButton", "P") {
+
+    while GetKeyState("LButton", "P")
         Sleep(10)
-    }
+
+    MouseGetPos(&x1, &y1)
+
+    AddToLog("Click BOTTOM-RIGHT of wanted search area (top-left: "
+        x1 "," y1 ")")
+
+    ; Second click
+    while !GetKeyState("LButton", "P")
+        Sleep(10)
+
+    while GetKeyState("LButton", "P")
+        Sleep(10)
+
     MouseGetPos(&x2, &y2)
 
-    regions := [x1, y1, x2, y2]
+    ; Normalize coordinates.
+    left := Min(x1, x2)
+    top := Min(y1, y2)
+    right := Max(x1, x2)
+    bottom := Max(y1, y2)
 
-    ; ---- COPY TO CLIPBOARD (ready to paste!) ----
-    clip := Format("{1}, {2}, {3}, {4}", x1, y1, x2, y2)
-    A_Clipboard := clip
-    AddToLog("Region: " x1 ", " y1 ", " x2 ", " y2 "")
+    region := [left, top, right, bottom]
+
+    A_Clipboard := Format("{1}, {2}, {3}, {4}",
+        left, top, right, bottom)
+
+    AddToLog("Region: " left ", " top ", " right ", " bottom)
+
+    ; Show the selected region.
+    ShowOCRRegions([region])
+
+    return region
 }

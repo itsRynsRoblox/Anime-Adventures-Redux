@@ -134,20 +134,21 @@ DeleteCustomCoordsForPreset(mapName) {
     } else {
         AddToLog("⚠️ No custom placements to remove for map: " mapName)
     }
+    UpdatePlacementListView()
 }
 
 GetPlacementsForMode(mode) {
     switch mode {
         case "Story":
-            return StoryDropdown.Text
+            return currentMap != "" ? currentMap : StoryDropdown.Text
         case "Legend Stages":
-            return LegendDropDown.Text
+            return currentMap != "" ? currentMap : LegendDropDown.Text
         case "Raid":
-            return RaidDropdown.Text
+            return currentMap != "" ? currentMap : RaidDropdown.Text
         case "Portal":
-            return PortalDropdown.Text
+            return currentMap != "" ? currentMap : PortalDropdown.Text
         case "Event":
-            return EventDropdown.Text
+            return currentMap != "" ? currentMap : EventDropdown.Text
         case "Custom":
             return CustomPlacementMapDropdown.Text
     }
@@ -233,4 +234,191 @@ ImportCustomCoords() {
 
     ; Optional: Save after importing
     SaveCustomPlacements()
+}
+
+UpdatePlacementListView(*) {
+    global savedCoords, CustomPlacementMapDropdown, PlacementListView
+
+    PlacementListView.Delete()
+
+    profileName := CustomPlacementMapDropdown.Text
+    if !savedCoords.Has(profileName) || savedCoords[profileName].Length = 0
+        return
+
+    for i, entry in savedCoords[profileName]
+        PlacementListView.Add(, i, entry.x, entry.y)
+
+    loop 3
+        PlacementListView.ModifyCol(A_Index, "AutoHdr")
+
+    UpdatePlacementStatus()
+}
+
+UpdatePlacementStatus() {
+    global savedCoords, CustomPlacementMapDropdown, PlacementStatusText
+    profileName := CustomPlacementMapDropdown.Text
+    count := savedCoords.Has(profileName) ? savedCoords[profileName].Length : 0
+    PlacementStatusText.Value := count (count = 1 ? " placement" : " placements") "  |  Double-click a row to edit"
+}
+
+RemoveSelectedPlacement(*) {
+    global savedCoords, CustomPlacementMapDropdown, PlacementListView
+
+    row := PlacementListView.GetNext()
+    if !row
+        return
+
+    profileName := CustomPlacementMapDropdown.Text
+    if !savedCoords.Has(profileName) || row > savedCoords[profileName].Length
+        return
+
+    savedCoords[profileName].RemoveAt(row)
+
+    SavePlacementProfiles()
+    UpdatePlacementListView()
+    AddToLog("Removed placement #" row " from " profileName)
+}
+
+EditSelectedPlacement(*) {
+    global savedCoords, CustomPlacementMapDropdown, PlacementListView
+
+    row := PlacementListView.GetNext()
+    if !row
+        return
+
+    profileName := CustomPlacementMapDropdown.Text
+    if !savedCoords.Has(profileName) || row > savedCoords[profileName].Length
+        return
+
+    entry := savedCoords[profileName][row]
+
+    editGui := Gui("+AlwaysOnTop -MinimizeBox", "Edit Placement #" row)
+    editGui.SetFont("s10")
+
+    editGui.Add("Text", "x20 y20", "X:")
+    xEdit := editGui.Add("Edit", "x60 y18 w100", entry.x)
+
+    editGui.Add("Text", "x20 y55", "Y:")
+    yEdit := editGui.Add("Edit", "x60 y53 w100", entry.y)
+
+    saveBtn := editGui.Add("Button", "x30 y100 w80", "Save")
+    cancelBtn := editGui.Add("Button", "x130 y100 w80", "Cancel")
+
+    saveBtn.OnEvent("Click", (*) => SaveEditedPlacement())
+    cancelBtn.OnEvent("Click", (*) => editGui.Destroy())
+    editGui.OnEvent("Close", (*) => editGui.Destroy())
+
+    editGui.Show("w240 h150")
+
+    SaveEditedPlacement() {
+        if (xEdit.Value = "" || yEdit.Value = "") {
+            MsgBox("X and Y must both have a value.")
+            return
+        }
+
+        savedCoords[profileName][row].x := Integer(xEdit.Value)
+        savedCoords[profileName][row].y := Integer(yEdit.Value)
+
+        SavePlacementProfiles()
+        UpdatePlacementListView()
+        editGui.Destroy()
+        AddToLog("Updated placement #" row " on profile: " profileName)
+    }
+}
+
+ShowPlacementDots(profileName := "", duration := 5000, winTitle := "ahk_exe RobloxPlayerBeta.exe") {
+    global savedCoords, CustomPlacementMapDropdown
+
+    if !WinExist(winTitle) {
+        return
+    }
+
+    if (profileName = "")
+        profileName := CustomPlacementMapDropdown.Text
+
+    if !savedCoords.Has(profileName) || savedCoords[profileName].Length = 0 {
+        AddToLog("No placements saved for: " profileName)
+        return
+    }
+
+    AddToLog("Showing placements for: " profileName)
+
+    ; Client area's top-left screen position (same approach as ShowOCRRegions).
+    WinGetClientPos(&offX, &offY, , , winTitle)
+
+    allGuis := []
+    size := 14   ; dot diameter in pixels
+
+    for entry in savedCoords[profileName] {
+        ; Convert client-relative coords to screen coords, centered on the point.
+        x := entry.x + offX - size // 2
+        y := entry.y + offY - size // 2
+
+        g := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
+        g.BackColor := "Red"
+        g.Show("x" x " y" y " w" size " h" size " NoActivate")
+        WinSetRegion("0-0 W" size " H" size " E", "ahk_id " g.Hwnd)   ; make it round
+        allGuis.Push(g)
+    }
+
+    Cleanup(*) {
+        for g in allGuis
+            g.Destroy()
+    }
+
+    SetTimer(Cleanup, -duration)
+}
+
+AddManualPlacement(*) {
+    global savedCoords, CustomPlacementMapDropdown
+
+    profileName := CustomPlacementMapDropdown.Text
+    if (profileName = "") {
+        AddToLog("Select or create a profile first.")
+        return
+    }
+
+    addGui := Gui("+AlwaysOnTop -MinimizeBox", "Add Placement to " profileName)
+    addGui.SetFont("s10")
+
+    addGui.Add("Text", "x20 y20", "X:")
+    xEdit := addGui.Add("Edit", "x60 y18 w100 Number")
+
+    addGui.Add("Text", "x20 y55", "Y:")
+    yEdit := addGui.Add("Edit", "x60 y53 w100 Number")
+
+    saveBtn := addGui.Add("Button", "x30 y100 w80 Default", "Add")
+    cancelBtn := addGui.Add("Button", "x130 y100 w80", "Cancel")
+
+    saveBtn.OnEvent("Click", (*) => SaveNewPlacement())
+    cancelBtn.OnEvent("Click", (*) => addGui.Destroy())
+    addGui.OnEvent("Close", (*) => addGui.Destroy())
+
+    addGui.Show("w240 h150")
+
+    SaveNewPlacement() {
+        xVal := Trim(xEdit.Value)
+        yVal := Trim(yEdit.Value)
+
+        if !IsInteger(xVal) {
+            AddToLog("X must be a whole number of 0 or higher.")
+            xEdit.Focus()
+            return
+        }
+        if !IsInteger(yVal) {
+            AddToLog("Y must be a whole number of 0 or higher.")
+            yEdit.Focus()
+            return
+        }
+
+        if !savedCoords.Has(profileName)
+            savedCoords[profileName] := []
+
+        savedCoords[profileName].Push({ x: Integer(xVal), y: Integer(yVal) })
+
+        SaveCustomPlacements()
+        UpdatePlacementListView()
+        addGui.Destroy()
+        AddToLog("Added placement (" xVal ", " yVal ") to " profileName)
+    }
 }

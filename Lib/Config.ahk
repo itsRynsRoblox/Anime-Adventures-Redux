@@ -64,10 +64,8 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
 
                 },
                 Events: {
-                    Halloween: {
-                        Restart: HalloweenRestart.Value,
-                        Wave: HalloweenRestartTimer.Value,
-                        Use_Premade_Movement: HalloweenPremadeMovement.Value
+                    Fools_Hunt: {
+                        Bring_Own_Team: BringOwnTeam.Value,
                     }
                 }
             },
@@ -112,7 +110,6 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
 }
 
 LoadUnitSettingsByMode(fromFile := false) {
-    global nukeCoords
 
     mode := ModeDropdown.Text
 
@@ -224,9 +221,11 @@ LoadUnitSettingsByMode(fromFile := false) {
     ShouldLoopRecording.Value := GetValue(data, ["Custom_Recordings", "Loop"], 0)
     ShouldHandleGameEnd.Value := GetValue(data, ["Custom_Recordings", "HandleEnd"], 0)
 
-    HalloweenRestart.Value := GetValue(data, ["Modes", "Events", "Halloween", "Restart"], 0)
-    HalloweenRestartTimer.Value := GetValue(data, ["Modes", "Events", "Halloween", "Wave"], 58)
-    HalloweenPremadeMovement.Value := GetValue(data, ["Modes", "Events", "Halloween", "Use_Premade_Movement"], 0)
+    TeamSwap.Value := GetValue(data, ["Contracts", "Enabled"], 0)
+    physicalTeam.Value := GetValue(data, ["Contracts", "Physical_Team"], 1)
+    magicTeam.Value := GetValue(data, ["Contracts", "Magic_Team"], 2)
+
+    BringOwnTeam.Value := GetValue(data, ["Modes", "Events", "Fools_Hunt", "Bring_Own_Team"], 0)
 
     TeleportFailsafe.Value := GetValue(data, ["Failsafe_Settings", "Teleport_Failsafe", "Enabled"], 0)
     TeleportFailsafeTimer.Value := GetValue(data, ["Failsafe_Settings", "Teleport_Failsafe", "Timer"], 120)

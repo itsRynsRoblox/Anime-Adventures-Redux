@@ -6,7 +6,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v1.0.0"
+global version := "v0.1.0"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -148,21 +148,22 @@ AddBorder(x, y, w, h) {
 MainUI.BackColor := uiColors["Background"]
 global Webhookdiverter := AddUI("Edit", "x0 y0 w1 h1 +Hidden")
 
-/*; ===== Game Mode Selection box (using your border system) =====
+; ===== Game Mode Selection box =====
 x := 808, y := 38, w := 500, h := 45
-borderColor := uiTheme[1]          ; change if your borders use a different index
-fillColor := uiTheme[2]          ; the color you originally wanted
+borderColor := uiTheme[1]
+fillColor := uiTheme[2]
 
-; Four borders (exactly like your other uiBorders)
-uiBorders.Push(AddBorder(x, y + 7, w, 1,))          ; Top
-uiBorders.Push(AddBorder(x, y + h - 1, w, 1))          ; Bottom
-uiBorders.Push(AddBorder(x, y + 7, 1, h - 7))          ; Left
-uiBorders.Push(AddBorder(x + w - 1, y + 7, 1, h - 7))          ; Right
+; Create the four borders and keep references
+global gameModeBorders := []
+gameModeBorders.Push(AddBorder(x, y + 7, w, 1))           ; Top
+gameModeBorders.Push(AddBorder(x, y + h - 1, w, 1))       ; Bottom
+gameModeBorders.Push(AddBorder(x, y + 7, 1, h - 7))       ; Left
+gameModeBorders.Push(AddBorder(x + w - 1, y + 7, 1, h - 7)) ; Right
 
-; White title text centered on the top border (classic GroupBox look)
+; Title text
 MainUI.SetFont("s9 Bold c" uiTheme[1])
-MainUI.Add("Text", "x" x " y" (y - 7) " w" w " Center BackgroundTrans", "Game Mode Selection")
-MainUI.SetFont()                     ; reset if you want */
+gameModeTitle := MainUI.Add("Text", "x" x " y" (y - 7) " w" w " Center BackgroundTrans", "Game Mode Selection")
+MainUI.SetFont()
 
 ; ========== Borders ==========
 uiBorders.Push(AddBorder(0, 0, mainWidth, 1))                          ; Top
@@ -192,7 +193,7 @@ global exportUnitConfigButton := AddUI("Picture", "x1337 y48 w20 h20 +Background
 
 ; ========== Title ==========
 MainUI.SetFont("Bold s16 c" uiColors["Primary"], "Verdana")
-global windowTitle := MainUI.Add("Text", "x10 y3 w1200 h29 +BackgroundTrans", GameTitle "" . "" version)
+global windowTitle := MainUI.Add("Text", "x10 y2 w1200 h29 +BackgroundTrans", GameTitle "" . "" version . " (Free)")
 
 ; ========== Console Label ==========
 MainUI.Add("Text", "x805 y501 w558 h25 +Center +BackgroundTrans", "Console")
@@ -229,60 +230,149 @@ OpenGuide(*) {
 
     ; Add Guide content
     GuideGUI.SetFont("s16 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "1 - In your ROBLOX settings, make sure your graphics are set to 1")
-    GuideGUI.Add("Picture", "x50 w700   cWhite +Center", "Images\graphics1.png")
+
+    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "1 - In your AA settings make sure you have these 2 settings set to this")
+    GuideGUI.Add("Picture", "x100 w600 h160 cWhite +Center", "Images\aasettings.png")
+    GuideGUI.Add("Picture", "x50 w700 cWhite +Center", "Images\graphics1.png")
+    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "2 - Set up the unit setup however you want, however I'd avoid hill only units`nif you can since it might break")
+    GuideGUI.Add("Text", "x0 w800 cWhite +Center", "3 - Rejoin Anime Adventures to reset the camera and press F2 to start the macro. Good luck!" )
+
     GuideGUI.Show("w800")
 }
 
 OpenDebugMenu(*) {
-    DebugGUI := Gui("+AlwaysOnTop")
-    DebugGUI.SetFont("s10 bold", "Segoe UI")
-    DebugGUI.Title := "Ryn's " GameName " - Debug Menu"
-    DebugGUI.BackColor := "0c000a"
-    DebugGUI.MarginX := 20
-    DebugGUI.MarginY := 20
+    static DebugGUI := ""
+    if IsObject(DebugGUI) {            ; already open -> just bring it forward
+        try {
+            DebugGUI.Show()
+            return
+        }
+    }
 
-    ; Title
-    DebugGUI.SetFont("s14 bold", "Segoe UI")
-    DebugGUI.Add("Text", "x20 y10 w460 cWhite +Center", "Debug / Test Menu")
+    ; ---------- Theme ----------
+    ; Pulled from the macro's uiTheme array so the menu always matches the main UI.
+    ; Order: 1 Header, 2 Background, 3 Highlight, 4 Accent, 5 Trans, 6 Textbox, 7 Highlight
+    Hex := (c) => RegExReplace(c, "i)^0x")    ; strips "0x" prefix (e.g. "0x3d3c36")
+    C := {
+        bg: "0d1117",
+        panel: "161b22",
+        accent: "58a6ff",
+        accentHi: "79b8ff",
+        btn: "21262d",
+        btnHi: "30363d",
+        text: "e6edf3",
+        muted: "8b949e",
+        ok: "3fb950",
+        busy: "d29922"
+    }
+    W := 520, PAD := 24, IW := W - PAD * 2
 
-    ; Dropdown label
-    DebugGUI.SetFont("s10 bold", "Segoe UI")
-    DebugGUI.Add("Text", "x20 y35 cWhite", "Select something to test:")
+    DebugGUI := Gui("+AlwaysOnTop -MaximizeBox", "Ryn's " GameName " - Debug Menu")
+    DebugGUI.BackColor := C.bg
+    DebugGUI.MarginX := PAD
+    DebugGUI.MarginY := PAD
 
-    ; Dropdown list of FindText / test options
+    ; Dark title bar (Windows 10 1809+ / 11)
+    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", DebugGUI.Hwnd, "int", 20, "int*", 1, "int", 4)
+
+    ; ---------- Header ----------
+    DebugGUI.SetFont("s17 w700 c" C.text, "Segoe UI")
+    DebugGUI.Add("Text", "x" PAD " y18 w" IW, "Debug Menu")
+    DebugGUI.SetFont("s9 w400 c" C.muted, "Segoe UI")
+    DebugGUI.Add("Text", "x" PAD " y50 w" IW, "Run a detection test and see the result below")
+    DebugGUI.Add("Text", "x" PAD " y76 w" IW " h2 Background" C.accent)   ; accent divider
+
+    ; ---------- Test selector ----------
     TestOptions := [
-        "Check For Lobby",
-        "Unit Successfully Placed",
-        "Test Game Over",
-        "Check Active Cards",
+        "Check for the lobby",
+        "Check for successful unit placement",
+        "Check for results screen",
+        "Check for game over options",
+        "Check all on-screen cards",
+        "Check raid map coordinates",
         "Test screen resolution / DPI",
-        "Custom FindText (paste code below)"
     ]
+    Descriptions := Map(
+        "Check for the lobby", "Looks for the lobby screen to confirm you're not in a match.",
+        "Check for successful unit placement", "Checks whether a unit placement was detected (i.e if the unit interface active).",
+        "Check for results screen", "Looks for the game-over / results screen.",
+        "Check for game over options", "Looks for the replay / return to lobby options.",
+        "Check all on-screen cards", "Scans the card selection screen for all cards.",
+        "Check raid map coordinates", "Ensure that the raid maps interface is open and scrolled to the top.",
+        "Test screen resolution / DPI", "Reports your resolution and DPI scaling for troubleshooting.",
+    )
 
-    DDL := DebugGUI.Add("DropDownList", "x20 y55 w460 cBlack", TestOptions)
+    DebugGUI.SetFont("s9 w700 c" C.muted, "Segoe UI")
+    DebugGUI.Add("Text", "x" PAD " y94 w" IW, "Debug Selections")
+    DebugGUI.SetFont("s10 w400 c" C.text, "Segoe UI")
+    DDL := DebugGUI.Add("DropDownList", "x" PAD " y114 w" IW " Background" C.panel, TestOptions)
     DDL.Choose(1)
+    try DllCall("uxtheme\SetWindowTheme", "ptr", DDL.Hwnd, "str", "DarkMode_CFD", "str", "")
 
-    ; Optional multi-line box for custom FindText code
-   /* DebugGUI.Add("Text", "x20 y80 cWhite", "Custom FindText code (optional):")
-    CustomEdit := DebugGUI.Add("Edit", "x20 y100 w460 h80 Multi cBlack")*/
+    DebugGUI.SetFont("s9 w400 c" C.muted, "Segoe UI")
+    DescText := DebugGUI.Add("Text", "x" PAD " y150 w" IW " h20", Descriptions[TestOptions[1]])
+    DDL.OnEvent("Change", (*) => DescText.Text := Descriptions[DDL.Text])
 
-    ; Result / log area
-    DebugGUI.Add("Text", "x20 y85 cWhite", "Result / Log:")
-    ResultEdit := DebugGUI.Add("Edit", "x20 y105 w460 h120 Multi ReadOnly cBlack", "Ready...")
+    ; ---------- Log ----------
+    DebugGUI.SetFont("s9 w700 c" C.muted, "Segoe UI")
+    DebugGUI.Add("Text", "x" PAD " y184 w120", "RESULT / LOG")
+    DebugGUI.SetFont("s9 w700 c" C.ok, "Segoe UI")
+    StatusText := DebugGUI.Add("Text", "x" (W - PAD - 160) " y184 w160 Right", "● Ready")
 
-    ; Buttons
-    DebugGUI.SetFont("s10 bold", "Segoe UI")
-    BtnTest := DebugGUI.Add("Button", "x20 y240 w140 h35", "▶ Test Selected")
-    BtnClear := DebugGUI.Add("Button", "x180 y240 w140 h35", "Clear Log")
-    BtnClose := DebugGUI.Add("Button", "x340 y240 w140 h35", "Close")
+    DebugGUI.SetFont("s9 w400 c" C.text, "Consolas")
+    ResultEdit := DebugGUI.Add("Edit", "x" PAD " y206 w" IW " h150 Multi ReadOnly -E0x200 Background" C.panel, "Ready...")
+    try DllCall("uxtheme\SetWindowTheme", "ptr", ResultEdit.Hwnd, "str", "DarkMode_Explorer", "str", "")
 
-    ; ========== Event handlers ==========
-    BtnTest.OnEvent("Click", (*) => RunDebugTest(DDL.Text, "", ResultEdit))
-    BtnClear.OnEvent("Click", (*) => ResultEdit.Value := "")
-    BtnClose.OnEvent("Click", (*) => DebugGUI.Destroy())
+    ; ---------- Buttons (flat, with hover) ----------
+    Buttons := Map()
+    AddButton(label, x, w, normal, hover, callback) {
+        DebugGUI.SetFont("s10 w700 c" C.text, "Segoe UI")
+        ctrl := DebugGUI.Add("Text", "x" x " y376 w" w " h40 +0x200 Center Background" normal, label)
+        ctrl.OnEvent("Click", callback)
+        Buttons[ctrl.Hwnd] := { ctrl: ctrl, normal: normal, hover: hover, on: false }
+        return ctrl
+    }
 
-    DebugGUI.Show("w500 h300")
+    gap := 12
+    wMain := 200, wSide := (IW - wMain - gap * 2) // 2
+    AddButton("▶  Test Selected", PAD, wMain, C.accent, C.accentHi, RunTest)
+    AddButton("Clear Log", PAD + wMain + gap, wSide, C.btn, C.btnHi, (*) => ClearLog())
+    AddButton("Close", PAD + wMain + wSide + gap * 2, wSide, C.btn, C.btnHi, (*) => CloseGui())
+
+    ; ---------- Handlers ----------
+    RunTest(*) {
+        StatusText.SetFont("c" C.busy), StatusText.Text := "● Running..."
+        try RunDebugTest(DDL.Text, "", ResultEdit)
+        catch as err
+            ResultEdit.Value .= "`r`nError: " err.Message
+        StatusText.SetFont("c" C.ok), StatusText.Text := "● Done"
+    }
+    ClearLog() {
+        ResultEdit.Value := ""
+        StatusText.SetFont("c" C.ok), StatusText.Text := "● Ready"
+    }
+    CloseGui(*) {
+        OnMessage(0x200, OnHover, 0)
+        DebugGUI.Destroy()
+        DebugGUI := ""
+    }
+    OnHover(*) {
+        MouseGetPos(, , , &hCtrl, 2)
+        for hwnd, b in Buttons {
+            over := (hwnd = hCtrl)
+            if (over != b.on) {
+                b.on := over
+                b.ctrl.Opt("Background" (over ? b.hover : b.normal))
+                b.ctrl.Redraw()
+            }
+        }
+    }
+    OnMessage(0x200, OnHover)               ; WM_MOUSEMOVE
+    DebugGUI.OnEvent("Close", CloseGui)
+    DebugGUI.OnEvent("Escape", CloseGui)
+    FocusSink := DebugGUI.Add("Button", "x-50 y-50 w1 h1")
+    DebugGUI.Show("w" W " h" 376 + 40 + PAD)
+    FocusSink.Focus()
 }
 
 ; ========== Test runner ==========
@@ -295,24 +385,33 @@ RunDebugTest(selected, customCode, ResultEdit) {
             Sleep 1000
         }
         switch selected {
-            case "Check For Lobby":
+            case "Check for the lobby":
                 ResultEdit.Value .= "Checking for the lobby...`n"
                 result := CheckForLobby()
                 ResultEdit.Value .= result ? "Found!" : "Not found"
 
-            case "Unit Successfully Placed":
+            case "Check for successful unit placement":
                 ResultEdit.Value .= "Checking for successful unit placement...`n"
                 result := UnitPlaced()
                 ResultEdit.Value .= result ? "Unit placement found!" : "Unit placement not found"
 
-            case "Test Game Over":
-                ResultEdit.Value .= "Checking for game over...`n"
+            case "Check for results screen":
+                ResultEdit.Value .= "Checking for results screen...`n"
                 result := CheckForXP(false, false)
-                ResultEdit.Value .= result ? "Game over found!" : "Game over not found"
+                ResultEdit.Value .= result ? "Results screen found!" : "Results screen not found"
 
-            case "Check Active Cards":
+            case "Check for game over options":
+                ResultEdit.Value .= "Checking for game over options...`n"
+                result := CheckAllGameOptions(&report)
+                ResultEdit.Value .= report
+
+            case "Check all on-screen cards":
                 count := CheckForActiveCards("", &report, true)
                 ResultEdit.Value .= report
+
+            case "Check raid map coordinates":
+                ResultEdit.Value .= "Testing all raid maps...`n"
+                TestAllRaidMaps()
 
             case "Test screen resolution / DPI":
                 ResultEdit.Value .= "Screen: " A_ScreenWidth "x" A_ScreenHeight ""
@@ -350,7 +449,7 @@ OpenPrivateServerGuide(*) {
 MainUI.SetFont("s9 Bold c" uiTheme[1])
 
 ActiveConfigurationText:= MainUI.Add("Text", "x840 y7 +Center c" uiTheme[1], "Active Configuration: ")
-ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Map Movement", "Mode", "Upgrade", "Recording"])
+ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Movement", "Mode", "Placement", "Upgrade", "Recording"])
 ConfigurationDropdown.OnEvent("Change", UpdateActiveConfiguration)
 
 global guideBtn := MainUI.Add("Button", "x1108 y5 w90 h20", "Guide")
@@ -369,6 +468,9 @@ global ReturnLobbyBox := MainUI.Add("CheckBox", "x1005 y451 cffffff", "Return To
 
 global MatchMaking := MainUI.Add("Checkbox", "x900 y476 cffffff", "Matchmaking")
 
+;Fool's Hunt Options
+global BringOwnTeam := MainUI.Add("CheckBox", "x1015 y476 cffffff", "Bring your own units")
+
 ;Contract Options
 global TeamSwap := MainUI.Add("CheckBox", "x1015 y476 cffffff", "Allow Team Swaps")
 PhysicalTeamText := MainUI.Add("Text", "x1135 y451 w115 h20 +Center", "Physical Team")
@@ -376,8 +478,11 @@ global PhysicalTeam := MainUI.Add("DropDownList", "x1170 y471 w45 h180 Choose1 +
 MagicTeamText := MainUI.Add("Text", "x1250 y451 w80 h20 +Center", "Magic Team")
 global MagicTeam := MainUI.Add("DropDownList", "x1270 y471 w45 h180 Choose1 +Center", ["1", "2", "3", "4", "5", "6"])
 
+;Portal Options
+global SwapFromPortal := MainUI.Add("CheckBox", "x1015 y476 cffffff", "Rotate Portals / Infinite when out of portals")
+
 PlacementPatternText := MainUI.Add("Text", "x815 y390 w125 h20", "Placement Pattern")
-global PlacementPatternDropdown := MainUI.Add("DropDownList", "x825 y410 w100 h180 Choose2 +Center", ["Circle", "Custom", "Grid", "3x3 Grid", "Spiral", "Up and Down", "Random"])
+global PlacementPatternDropdown := MainUI.Add("DropDownList", "x825 y410 w100 h180 Choose1 +Center", ["Circle", "Custom", "Grid", "3x3 Grid", "Spiral", "Up and Down", "Random"])
 
 PlaceSpeedText := MainUI.Add("Text", "x1030 y390 w115 h20", "Placement Speed")
 global PlaceSpeed := MainUI.Add("DropDownList", "x1035 y410 w100 h180 Choose3 +Center", ["Super Fast (1s)", "Fast (1.5s)", "Default (2s)", "Slow (2.5s)", "Very Slow (3s)", "Toaster (4s)"])
@@ -451,7 +556,7 @@ global ZoomText := MainUI.Add("Text", "x1018 y230 Hidden c" uiTheme[1], "Zoom Le
 global ZoomBox := MainUI.Add("Edit", "x1115 y228 w30 h20 Hidden cBlack Number", "20")
 global ZoomTech := MainUI.Add("Checkbox", "x1018 y260 Hidden Checked c" uiTheme[1], "Enable Zoom Tech")
 global ZoomInOption := MainUI.Add("Checkbox", "x1018 y290 Hidden Checked c" uiTheme[1], "Zoom in then out")
-global ZoomTeleport := MainUI.Add("Checkbox", "x1018 y320 Hidden c" uiTheme[1], "Teleport to spawn")
+global ZoomTeleport := MainUI.Add("Checkbox", "x1018 y320 Hidden Checked c" uiTheme[1], "Teleport to spawn")
 ZoomBox.OnEvent("Change", (*) => ValidateEditBox(ZoomBox))
 
 global MiscSettingsBorder := MainUI.Add("GroupBox", "x1163 y205 w195 h176 +Center Hidden c" uiTheme[1], "Update Settings")
@@ -492,7 +597,7 @@ RecordTestButton.OnEvent("Click", (*) => PlayRecordedActions())
 RecordImport := MainUI.Add("Picture", "x820 y108 w20 h20 +BackgroundTrans Hidden", Import)
 
 ;=== Custom Walk GUI ===
-global CustomWalkBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden" uiTheme[1], "Custom Walk Configuration")
+global CustomWalkBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Walk Configuration")
 global WalkMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
 global WalkMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
 WalkMapDropdown.OnEvent("Change", UpdateWalkListView)
@@ -522,28 +627,56 @@ global WalkRemoveBtn := MainUI.Add("Button", "x1255 y215 w80 h25 Hidden", "Remov
 WalkRemoveBtn.OnEvent("Click", RemoveSelectedMovement)
 global WalkEditBtn := MainUI.Add("Button", "x1255 y280 w80 h25 Hidden", "Edit")
 WalkEditBtn.OnEvent("Click", EditSelectedMovement)
-; === Custom Placement Settings ===
-global CustomSettings := MainUI.Add("GroupBox", "x130 y632 w665 h60 +Center c" uiTheme[1], "Custom Placement Settings")
-PlacementSettingsImportButton := AddUI("Picture", "x150 y652 w27 h27 +BackgroundTrans", Import, (*) => ImportCustomCoords())
-PlacementSettingsExportButton := AddUI("Picture", "x195 y652 w27 h27 +BackgroundTrans", Export, (*) => ExportCustomCoords(CustomPlacementMapDropdown.Text))
-CustomPlacementMap := MainUI.Add("Text", "x305 y645 w60 h20 +Left", "Profile")
-AddCustomPlacementProfile := MainUI.Add("Picture", "x425 y650 w15 h15 +BackgroundTrans", Add)
-AddCustomPlacementProfile.OnEvent("Click", (*) => AddPlacementProfile())
-RemoveCustomPlacementProfile := MainUI.Add("Picture", "x425 y670 w15 h15 +BackgroundTrans", Trash)
-RemoveCustomPlacementProfile.OnEvent("Click", (*) => DeletePlacementProfile())
-global CustomPlacementMapDropdown := MainUI.AddDropDownList("x240 y663 w180 h200 +Center")
+;=== Custom Placement GUI ===
+global CustomPlacementBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Placement Configuration")
 
-CustomPlacementButton := MainUI.Add("Button", "x450 y658 w85 h20", "Set")
-CustomPlacementButton.OnEvent("Click", (*) => StartCoordinateCapture())
-CustomPlacementClearButton := MainUI.Add("Button", "x575 y658 w85 h20", "Clear")
-CustomPlacementClearButton.OnEvent("Click", (*) => DeleteCustomCoordsForPreset(CustomPlacementMapDropdown.Text))
-fixCameraButton := MainUI.Add("Button", "x695 y658 w85 h20", "Fix Camera")
+; --- Toolbar ---
+global PlacementSettingsImportButton := MainUI.Add("Picture", "x820 y105 w20 h20 +BackgroundTrans Hidden", Import)
+PlacementSettingsImportButton.OnEvent("Click", (*) => ImportCustomCoords())
+global PlacementSettingsExportButton := MainUI.Add("Picture", "x845 y105 w20 h20 +BackgroundTrans Hidden", Export)
+PlacementSettingsExportButton.OnEvent("Click", (*) => ExportCustomCoords(CustomPlacementMapDropdown.Text))
+
+; --- Centered preset cluster (box center ≈ x1083) ---
+global CustomPlacementMap := MainUI.Add("Text", "x940 y105 w55 h24 +0x200 +Right Hidden cffffff", "Preset:")
+global CustomPlacementMapDropdown := MainUI.Add("DropDownList", "x1002 y106 w200 h200 +Center Hidden", customDropdowns)
+CustomPlacementMapDropdown.OnEvent("Change", UpdatePlacementListView)
+global AddCustomPlacementProfile := MainUI.Add("Picture", "x1210 y101 w15 h15 +BackgroundTrans Hidden", Add)
+AddCustomPlacementProfile.OnEvent("Click", (*) => AddPlacementProfile())
+global RemoveCustomPlacementProfile := MainUI.Add("Picture", "x1210 y118 w15 h15 +BackgroundTrans Hidden", Trash)
+RemoveCustomPlacementProfile.OnEvent("Click", (*) => DeletePlacementProfile())
+
+global fixCameraButton := MainUI.Add("Button", "x1245 y105 w100 h24 Hidden", "Fix Camera")
 fixCameraButton.OnEvent("Click", (*) => BasicSetup(true))
 
-;GithubButton.OnEvent("Click", (*) => OpenGithub())
+; --- Divider ---
+global PlacementDivider := MainUI.Add("Text", "x809 y138 w549 h2 +0x10 Hidden")
+
+; --- List (left) ---
+global PlacementListView := MainUI.Add("ListView", "x820 y150 w350 h195 Hidden -Multi cBlack", ["#", "X", "Y"])
+PlacementListView.OnEvent("DoubleClick", EditSelectedPlacement)
+global PlacementStatusText := MainUI.Add("Text", "x820 y353 w350 h18 Hidden cffffff", "0 placements  |  Double-click a row to edit")
+
+; --- Actions (right) ---
+global PlacementListHeader := MainUI.Add("Text", "x1185 y148 w160 h16 Hidden cffffff", "View List Options")
+PlacementListHeader.SetFont("s9 Bold")
+global PlacementAddButton := MainUI.Add("Button", "x1185 y168 w160 h26 Hidden", "Add")
+PlacementAddButton.OnEvent("Click", AddManualPlacement)
+global PlacementListEditButton := MainUI.Add("Button", "x1185 y198 w160 h26 Hidden", "Edit")
+PlacementListEditButton.OnEvent("Click", EditSelectedPlacement)
+global PlacementListDeleteButton := MainUI.Add("Button", "x1185 y228 w160 h26 Hidden", "Remove")
+PlacementListDeleteButton.OnEvent("Click", RemoveSelectedPlacement)
+
+global PlacementCaptureHeader := MainUI.Add("Text", "x1185 y264 w160 h16 Hidden cffffff", "Coordinate Options")
+PlacementCaptureHeader.SetFont("s9 Bold")
+global CustomPlacementButton := MainUI.Add("Button", "x1185 y284 w160 h26 Hidden", "Set")
+CustomPlacementButton.OnEvent("Click", (*) => StartCoordinateCapture())
+global CustomPlacementClearButton := MainUI.Add("Button", "x1185 y314 w160 h26 Hidden", "Clear All")
+CustomPlacementClearButton.OnEvent("Click", (*) => DeleteCustomCoordsForPreset(CustomPlacementMapDropdown.Text))
+global PlacementShowButton := MainUI.Add("Button", "x1185 y344 w160 h26 Hidden", "Show Dots")
+PlacementShowButton.OnEvent("Click", (*) => ShowPlacementDots())
+
 DiscordButton.OnEvent("Click", (*) => OpenDiscord())
 ;--------------SETTINGS--------------;
-global modeSelectionGroup := MainUI.Add("GroupBox", "x808 y38 w500 h45 +Center Background" uiTheme[2], "Game Mode Selection")
 MainUI.SetFont("s10 c" uiTheme[6])
 global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts", "Infinity Castle", "Legend Stages", "Portal", "Custom"])
 global EventDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center Hidden", ["Fool's Hunt"])
@@ -569,12 +702,18 @@ ContractJoinDropdown.Visible := false
 ContractPageDropdown.Visible := false
 InfinityCastleDropdown.Visible := false
 
+;Fool's Hunt
+BringOwnTeam.Visible := false
+
 ;Contracts
 TeamSwap.Visible := false
 MagicTeamText.Visible := false
 MagicTeam.Visible := false
 PhysicalTeamText.Visible := false
 PhysicalTeam.Visible := false
+
+;Portals
+SwapFromPortal.Visible := false
 
 Hotkeytext.Visible := false
 Hotkeytext2.Visible := false
@@ -587,9 +726,6 @@ RaidDropdown.OnEvent("Change", OnRaidChange)
 PlacementPatternDropdown.OnEvent("Change", OnPlacementChange)
 ConfirmButton.OnEvent("Click", OnConfirmClick)
 ;------MAIN UI------;
-
-;------UNIT CONFIGURATION------UNIT CONFIGURATION------UNIT CONFIGURATION/------UNIT CONFIGURATION/------UNIT CONFIGURATION/------UNIT CONFIGURATION/
-
 AddUnitCard(MainUI, index, x, y) {
     unit := {}
 
@@ -742,6 +878,7 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
 }
 
 MainUI.Show("w1366 h700")
+;WinMove(0, 0, , , "ahk_id " MainUIHwnd)
 CenterMacroWindow()   ; Window follow was: WinMove(0, 0,,, "ahk_id " aaMainUIHwnd)
 SetupDraggableGui()   ; Window follow drag the GUI by its background, Roblox follows
 forceRobloxSize()  ; Initial force size and position
@@ -926,8 +1063,7 @@ InitControlGroups() {
     if (autoUpgradeDisabled)
         Blacklist.Push("upgradeEnabled")
 
-    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled",
-        "upgradeLimit", "abilityEnabled"] {
+    for name in ["Placement", "enabled", "priority", "upgradePriority", "upgradeEnabled", "upgradeLimitEnabled", "upgradeLimit", "abilityEnabled"] {
         loop 6 {
             varName := name . A_Index
             baseName := RegExReplace(varName, "\d+$")
@@ -988,9 +1124,19 @@ InitControlGroups() {
         FoolsHuntCardButton, FoolsHuntCardText
     ]
 
-    ControlGroups["Map Movement"] := [
+    ControlGroups["Movement"] := [
         CustomWalkBorder, WalkMapText, WalkMapDropdown, WalkTipText, WalkListView, WalkRemoveBtn, WalkEditBtn, MovementSetButton, MovementClearButton, MovementTestButton,
         MovementImport, MovementExport
+    ]
+
+    ControlGroups["Placement"] := [
+        CustomPlacementBorder,
+        PlacementSettingsImportButton, PlacementSettingsExportButton,
+        CustomPlacementMap, CustomPlacementMapDropdown, AddCustomPlacementProfile, RemoveCustomPlacementProfile,
+        fixCameraButton, PlacementDivider,
+        PlacementListView, PlacementStatusText,
+        PlacementListHeader, PlacementAddButton, PlacementListEditButton, PlacementListDeleteButton,
+        PlacementCaptureHeader, CustomPlacementButton, CustomPlacementClearButton, PlacementShowButton
     ]
 
     ControlGroups["Recording"] := [
@@ -1170,4 +1316,5 @@ StopCoordinateCapture(*) {
     SetTimer(UpdateTooltip, 0)
     SetTimer(ClearToolTip, -500)
     AddToLog("✅ Coordinate capture stopped.")
+    UpdatePlacementListView()
 }

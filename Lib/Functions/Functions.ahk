@@ -33,7 +33,7 @@ getCurrentTime() {
 
 OnModeChange(*) {
     ; Hide all
-    for ctrl in [StoryDropdown, StoryActDropdown, InfinityCastleDropdown, LegendDropDown, LegendActDropdown, RaidDropdown, RaidActDropdown, PortalDropdown, PortalRoleDropdown, EventDropdown, ContractJoinDropdown, ContractPageDropdown, PhysicalTeamText, PhysicalTeam, MagicTeamText, MagicTeam, TeamSwap]
+    for ctrl in [StoryDropdown, StoryActDropdown, InfinityCastleDropdown, LegendDropDown, LegendActDropdown, RaidDropdown, RaidActDropdown, PortalDropdown, PortalRoleDropdown, SwapFromPortal, EventDropdown, ContractJoinDropdown, ContractPageDropdown, PhysicalTeamText, PhysicalTeam, MagicTeamText, MagicTeam, TeamSwap, BringOwnTeam]
         ctrl.Visible := false
 
     if (ActiveControlGroup = "Mode") {
@@ -62,6 +62,7 @@ OnModeChange(*) {
             RaidDropdown.Visible := RaidActDropdown.Visible := true
         case "Portal":
             PortalDropdown.Visible := PortalRoleDropdown.Visible := true
+            SwapFromPortal.Visible := true
         case "Infinity Castle":
             InfinityCastleDropdown.Visible := true
         case "Custom":
@@ -82,20 +83,10 @@ OnStoryChange(*) {
 }
 
 OnEventChange(*) {
-    if (EventDropdown.Text != "") {
-        ContractJoinDropdown.Visible := true
-        ContractPageDropdown.Visible := true
-        PhysicalTeamText.Visible := true
-        PhysicalTeam.Visible := true
-        MagicTeamText.Visible := true
-        MagicTeam.Visible := true
-        TeamSwap.Visible := true
+    if (EventDropdown.Text = "Fool's Hunt") {
+        BringOwnTeam.Visible := true
     } else {
-        PhysicalTeamText.Visible := false
-        PhysicalTeam.Visible := false
-        MagicTeamText.Visible := false
-        MagicTeam.Visible := false
-        TeamSwap.Visible := false
+        BringOwnTeam.Visible := false
     }
 }
 
@@ -186,8 +177,9 @@ OnConfirmClick(*) {
     ; Hide all dropdowns and confirm button
     for ctrl in [ModeDropdown, ContractJoinDropdown, ContractPageDropdown, InfinityCastleDropdown, StoryDropdown, StoryActDropdown, LegendDropDown, LegendActDropdown,
         RaidDropdown, RaidActDropdown, PortalDropdown,
-        PortalRoleDropdown, EventDropdown, ConfirmButton, modeSelectionGroup] {
+        PortalRoleDropdown, EventDropdown, ConfirmButton] {
         ctrl.Visible := false
+        ToggleGameModeSelection(false)
     }
 
     ; Show hotkey texts
@@ -195,6 +187,26 @@ OnConfirmClick(*) {
         ctrl.Visible := true
 
     global confirmClicked := true
+}
+
+ToggleGameModeSelection(show := true) {
+    ; Borders
+    for border in gameModeBorders
+        border.Visible := show
+
+    ; Title
+    gameModeTitle.Visible := show
+
+    ; All the controls that belong to this section
+    controls := [
+        ModeDropdown, ContractJoinDropdown, ContractPageDropdown,
+        InfinityCastleDropdown, StoryDropdown, StoryActDropdown,
+        LegendDropDown, LegendActDropdown, RaidDropdown, RaidActDropdown,
+        PortalDropdown, PortalRoleDropdown, EventDropdown, ConfirmButton
+    ]
+
+    for ctrl in controls
+        ctrl.Visible := show
 }
 
 FixClick(x, y, LR := "Left", shouldWiggle := false) {
@@ -866,4 +878,55 @@ WaitAndCheck(ms) {
 ; Releases any held movement keys
 StopMovement() {
     SendInput("{w up}{a up}{s up}{d up}")
+}
+
+CheckForNotification() {
+    return FT(&X, &Y, 748, 94, 778, 551, 0, 0, ExitNotification) ? true : false
+}
+
+CheckAllGameOptions(&report := "") {
+    report := ""
+    foundAny := false
+
+    ; Each option now uses its own FT definition
+    options := [{ name: "Replay", ft: Replay }, { name: "Next Level", ft: NextLevel },      ; change if your variable is named differently
+    { name: "Return to Lobby", ft: ReturnToLobby }]
+
+    for opt in options {
+        if (FT(&X, &Y, 80, 85, 739, 224, 0, 0, opt.ft)) {
+            report .= "✓ " opt.name " is available`n"
+            foundAny := true
+        } else {
+            report .= "✗ " opt.name " is NOT available`n"
+        }
+    }
+
+    if !foundAny
+        report := "No game-over options detected.`n"
+
+    return foundAny
+}
+
+ClickUntilGone(x, y, searchX1, searchY1, searchX2, searchY2, textToFind, offsetX := 0, offsetY := 0, textToFind2 := "") {
+    while (ok := FT(&X, &Y, searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind) || textToFind2 && FT(&X, &Y,
+        searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind2)) {
+        if (offsetX != 0 || offsetY != 0) {
+            FixClick(X + offsetX, Y + offsetY)
+        } else {
+            FixClick(x, y)
+        }
+        Sleep(1000)
+    }
+}
+
+ClickReplay() {
+    ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, -40)
+}
+
+ClickNextLevel() {
+    ClickUntilGone(0, 0, 80, 85, 739, 224, NextText, 0, -40)
+}
+
+ClickReturnToLobby() {
+    ClickUntilGone(0, 0, 80, 85, 739, 224, ReturnToLobby, 0, -40)
 }

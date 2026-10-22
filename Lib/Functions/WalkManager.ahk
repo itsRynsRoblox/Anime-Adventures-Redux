@@ -17,15 +17,17 @@ Walk(direction, duration) {
 GetMapForMode(mode) {
     switch mode {
         case "Story":
-            return StoryDropdown.Text
+            return currentMap != "" ? currentMap : StoryDropdown.Text
         case "Legend Stages":
-            return LegendDropDown.Text
+            return currentMap != "" ? currentMap : LegendDropDown.Text
+        case "Infinity Castle":
+            return currentMap != "" ? currentMap : ""
         case "Raid":
-            return RaidDropdown.Text
+            return currentMap != "" ? currentMap : RaidDropdown.Text
         case "Portal":
-            return PortalDropdown.Text
+            return currentMap != "" ? currentMap : PortalDropdown.Text
         case "Event":
-            return EventDropdown.Text
+            return currentMap != "" ? currentMap : EventDropdown.Text
         case "Custom":
             return WalkMapDropdown.Text
     }
@@ -300,6 +302,7 @@ ClearMovement(*) {
     AddToLog("Clearing movements for map: " mapName)
     allWalks.Delete(mapName)
     SaveAllMovements()
+    UpdateWalkListView()
 }
 
 UpdateWalkListView(*) {

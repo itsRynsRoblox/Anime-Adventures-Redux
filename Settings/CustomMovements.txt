@@ -1,4 +1,1 @@
-﻿Custom,d,296,32
-Custom,a,312,32
-Custom,d,172,-47
-Custom,w,125,94
+﻿

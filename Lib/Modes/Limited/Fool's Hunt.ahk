@@ -81,3 +81,66 @@ DetectHuntMap() {
         Reconnect()
     }
 }
+
+ClickAndHoldExit() {
+    if WinExist(rblxID) {
+        WinMove(-10, 15, 800, 600, rblxID)
+        WinActivate(rblxID)
+        Sleep 1000
+    }
+    AddToLog("Freezing client for 2 minutes...")
+    FreezeClientNew(692, 20) ; Freeze Client for 2 minutes before resuming
+    AddToLog("Unfroze client")
+    fixclick(200, 400)
+    Sleep (1000)
+    moveRobloxWindow()
+    sleep 1000
+    moveRobloxWindow()
+}
+
+FreezeClientNew(x, y, holdTime := 110000) { ;110000
+    CoordMode("Mouse", "Window")
+    MouseMove(x, y)                     ; move to Roblox minimize button
+    Sleep(50)
+    SendEvent("{RButton down}")         ; hold right click
+    Sleep(holdTime)                     ; 2 minutes = 120000 ms
+    SendEvent("{RButton up}")           ; release
+    Sleep(50)
+    CoordMode("Mouse", "Client")
+}
+
+StartFoolsHunt() {
+    ; Execute the movement pattern
+    AddToLog("Moving to position for Fool's Hunt")
+    EventMovement()
+
+    ; Start stage
+    while !(ok := FT(&X, &Y, 468 - 150000, 386 - 150000, 468 + 150000, 386 + 150000, 0, 0, JoinMatchmaking)) {
+        Reconnect() ; Added Disconnect Check
+        EventMovement()
+    }
+
+    ; Handle play mode selection
+    if (MatchMaking.Value) {
+        FindMatch()
+    } else {
+        PlayHere()
+    }
+
+    AddToLog("Starting Fool's Hunt")
+    RestartStage()
+}
+
+EventMovement() {
+    FixClick(592, 204) ; Close Matchmaking UI (Just in case)
+    Sleep (200)
+    FixClick(85, 295) ; Click Play
+    sleep (1000)
+    SendInput ("{a up}")
+    Sleep 100
+    SendInput ("{a down}")
+    Sleep 6000
+    SendInput ("{a up}")
+    KeyWait "a" ; Wait for "d" to be fully processed
+    Sleep 1200
+}

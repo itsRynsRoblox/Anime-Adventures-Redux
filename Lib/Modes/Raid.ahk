@@ -1,6 +1,20 @@
 #Requires AutoHotkey v2.0
 
-StartRaidMode() {
+; How many acts each stage supports
+global RaidMaxActs := Map(
+    "Ant Kingdom", 1,
+    "Sacred Planet", 5,
+    "Strange Town", 5,
+    "Ruined City", 1,
+    "Cursed Festival", 5,
+    "Future City (Tyrant)", 5,
+    "Storm Hideout", 5,
+    "Future City", 1,
+    "Nightmare Train", 1,
+    "Sand Village", 1
+)
+
+StartRaidStage() {
 
     ; Get current map and act
     currentRaidMap := RaidDropdown.Text
@@ -11,58 +25,140 @@ StartRaidMode() {
     RaidMovement()
 
     ; Start stage
-    /*while !(ok := FindText(&X, &Y, 304, 432, 399, 458, 0.10, 0.10, RaidSelectButton)) {
+    while !(ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel)) {
         RaidMovement()
-    }*/
+    }
 
     AddToLog("Starting " currentRaidMap " - " currentRaidAct)
     StartRaid(currentRaidMap, currentRaidAct)
-    ; Handle play mode selection
-    PlayHere()
+    if (MatchMaking.Value) {
+        FindMatch()
+    } else {
+        PlayHere()
+    }
     RestartStage()
 }
 
 StartRaid(map, act) {
-    return StartContent(map, act, GetRaidMap, GetRaidAct, { x: 195, y: 185 }, { x: 195, y: 185 })
+    return StartContent(map, act, GetRaidMap, GetRaidAct, { x: 695, y: 225 }, { x: 290, y: 245 })
 }
 
-RaidMovement() {
-    Teleport("Raid")
-    Sleep (1000)
-    spawnAngle := DetectAngle("Raid")
-    WalkToRaidRoom(spawnAngle)
-    Sleep (1000)
-}
-
-WalkToRaidRoom(angle) {
-    switch angle {
-        case 1:
-            Walk("a", 800)
-            Walk("w", 2000)
-        case 2:
-            Walk("s", 800)
-            Walk("a", 2000)
-    }
+ClickStartRaid() {
+    ClickUntilGone(0, 0, 320, 468, 486, 521, StartStoryButton, 0, -35)
 }
 
 GetRaidMap(map) {
     switch map {
-        case "Marines Fort": return { x: 185, y: 185, scrolls: 0 }
+        case "Ant Kingdom":
+            return { x: 630, y: 240, scrolls: 0 }
+        case "Sacred Planet":
+            return { x: 630, y: 290, scrolls: 0 }
+        case "Strange Town":
+            return { x: 630, y: 340, scrolls: 0 }
+        case "Ruined City":
+            return { x: 630, y: 390, scrolls: 0 }
+        case "Cursed Festival":
+            return { x: 630, y: 350, scrolls: 1 }
+        case "Future City (Tyrant)":
+            return { x: 630, y: 405, scrolls: 1 }
+
+        case "Storm Hideout":
+            return { x: 630, y: 355, scrolls: 2 }
+        case "Future City":
+            return { x: 630, y: 405, scrolls: 2 }
+
+        case "Nightmare Train":
+            return { x: 630, y: 360, scrolls: 3 }
+        case "Sand Village":
+            return { x: 630, y: 410, scrolls: 3 } 
     }
 }
 
 GetRaidAct(act) {
-    baseY := 185
-    spacing := 30
-    x := 270
+    switch act {
+        case "Act 1":
+            return { x: 285, y: 235, scrolls: 0 }
+        case "Act 2":
+            return { x: 285, y: 270, scrolls: 0 }
+        case "Act 3":
+            return { x: 285, y: 305, scrolls: 0 }
+        case "Act 4":
+            return { x: 285, y: 340, scrolls: 0 }
+        case "Act 5":
+            return { x: 285, y: 385, scrolls: 0 }
+        case "Act 6":
+            return { x: 285, y: 395, scrolls: 0 }
+    }
+}
 
-    ; Extract the act number from the string, e.g., "Act 3" → 3
-    if RegExMatch(act, "Act\s*(\d+)", &match) {
-        actNumber := match[1]
-        y := baseY + spacing * (actNumber - 1)
-        return { x: x, y: y, scrolls: 0 }
+RaidMovement() {
+    FixClick(765, 475) ; Click Area
+    Sleep(300)
+    FixClick(495, 410)
+    Sleep(500)
+    SendInput ("{a down}")
+    Sleep(400)
+    SendInput ("{a up}")
+    Sleep(500)
+    SendInput ("{w down}")
+    Sleep(5000)
+    SendInput ("{w up}")
+}
+
+TestAllRaidMaps() {
+    ; List of all maps in the order you want to test them
+    maps := [
+        "Ant Kingdom",
+        "Sacred Planet",
+        "Strange Town",
+        "Ruined City",
+        "Cursed Festival",
+        "Future City (Tyrant)",
+        "Storm Hideout",
+        "Future City",
+        "Nightmare Train",
+        "Sand Village"
+    ]
+
+    for mapName in maps {
+        data := GetRaidMap(mapName)
+        if !data {
+            continue
+        }
+
+        if (!WinActive(rblxID)) {
+            AddToLog("Stopped testing because the game window is no longer active.")
+            return
+        }
+
+        AddToLog("Testing map: " mapName)
+
+        ; Scroll down to the map
+        ScrollDown(data.scrolls)
+
+        ; Click the map
+        FixClick(data.x, data.y)
+        Sleep(800)
+
+        ; Scroll all the way back up
+        ScrollUp(data.scrolls)
+        Sleep(400)
     }
 
-    ; Default return if the input doesn't match expected format
-    return { x: x, y: baseY, scrolls: 0 }
+    AddToLog("Finished testing all raid maps!")
+}
+
+; ---------- Helper functions ----------
+ScrollDown(times) {
+    loop times {
+        SendInput("{WheelDown}")
+        Sleep(150)
+    }
+}
+
+ScrollUp(times) {
+    loop times {
+        SendInput("{WheelUp}")
+        Sleep(150)
+    }
 }
