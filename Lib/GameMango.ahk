@@ -17,7 +17,7 @@ F5:: {
 }
 
 F6:: {
-    SetUnitCardVisibility(false)
+
 }
 
 F7:: {
@@ -135,6 +135,22 @@ HandleCustomEnd() {
 }
 
 HandleDefaultEnd() {
+    mode := ModeDropdown.Text = "Event" ? EventDropdown.Text : ModeDropdown.Text
+
+    ; Infinity Castle advances to the next level instead of replaying
+    if (mode = "Infinity Castle") {
+        AddToLog("[Game Over] Infinity Castle, advancing to next level")
+        ClickNextLevel()
+        return RestartStage()
+    }
+
+    if (MatchMaking.Value && HasMatchmaking(mode)) {
+        AddToLog("[Game Over] Matchmaking enabled, returning to lobby to matchmake")
+        ClickReturnToLobby()
+        CheckLobby()
+        return
+    }
+
     if (!ReturnLobbyBox.Value) {
         AddToLog("[Game Over] Replaying stage")
         ClickReplay()
@@ -1891,14 +1907,14 @@ RestartStage() {
         TimerManager.Start("Teleport Failsafe", TeleportFailsafeTimer.Value * 1000)
     }
 
-    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
-
-    if (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") {
+    if (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt" && BringOwnTeam.Value) {
         CoordMode("Mouse", "Window")
         ClickAndHoldExit()
         CoordMode("Mouse", "Client")
         Sleep(1000)
     }
+
+    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
 
     ; Wait for loading
     CheckLoaded()
@@ -1997,7 +2013,7 @@ CheckLobby() {
 }
 
 CheckForLobby() {
-    return FT(&X, &Y, 746, 514, 789, 530, 0, 0, AreaText)
+    return FT(&X, &Y, 741, 501, 792, 594, 0, 0, AreaText)
 }
 
 CheckLoaded() {
@@ -2252,8 +2268,7 @@ SetRegion(winTitle := "ahk_exe RobloxPlayerBeta.exe") {
 
     MouseGetPos(&x1, &y1)
 
-    AddToLog("Click BOTTOM-RIGHT of wanted search area (top-left: "
-        x1 "," y1 ")")
+    AddToLog("Click BOTTOM-RIGHT of wanted search area (top-left: " x1 "," y1 ")")
 
     ; Second click
     while !GetKeyState("LButton", "P")

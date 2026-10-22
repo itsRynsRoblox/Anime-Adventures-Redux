@@ -502,7 +502,6 @@ LogPriorityOrder() {
 ShowOCRRegions(regions := 0, duration := 5000, winTitle := "ahk_exe RobloxPlayerBeta.exe") {
 
     if !WinExist(winTitle) {
-        MsgBox("Game window not found: " winTitle)
         return
     }
 
@@ -512,11 +511,12 @@ ShowOCRRegions(regions := 0, duration := 5000, winTitle := "ahk_exe RobloxPlayer
     ; If no custom regions were supplied, use the default OCR regions.
     if !regions {
         regions := [
-            [191, 227, 318, 258], ; Card 1
-            [336, 230, 463, 258], ; Card 2
-            [481, 229, 609, 255], ; Card 3
-            [226, 97, 577, 148],
-            [80, 85, 739, 224]    ; Card 4
+           ; [191, 227, 318, 258],
+           ; [336, 230, 463, 258],
+           ; [481, 229, 609, 255],
+           ; [226, 97, 577, 148],
+            ;[80, 85, 739, 224]
+            [741, 501, 792, 594]
         ]
     }
 
@@ -547,8 +547,7 @@ ShowOCRRegions(regions := 0, duration := 5000, winTitle := "ahk_exe RobloxPlayer
         for e in edges {
             g := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
             g.BackColor := "Red"
-            g.Show("x" e[1] " y" e[2]
-                " w" e[3] " h" e[4] " NoActivate")
+            g.Show("x" e[1] " y" e[2] " w" e[3] " h" e[4] " NoActivate")
             allGuis.Push(g)
         }
     }

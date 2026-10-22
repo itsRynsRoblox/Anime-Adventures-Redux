@@ -65,7 +65,7 @@ DetectHuntMap() {
         for mapName, patterns in loadingScreens {
             try {
                 for pattern in patterns {  ; Iterate through multiple images for each map
-                    if (ok := ImageSearch(&X, &Y, 0, 0, A_ScreenWidth, A_ScreenHeight, "*15 " pattern)) {
+                    if (ok := ImageSearch(&X, &Y, 3, 4, 796, 593, "*15 " pattern)) {
                         AddToLog("Detected Map: " mapName)
                         return mapName
                     }

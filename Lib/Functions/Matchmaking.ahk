@@ -17,15 +17,31 @@ FindMatch() {
             continue
         }
         FixClick(300, 385)  ; Enter captcha
+        Sleep(2000)
         while (A_TickCount - startTime < 60000) {  ; Check for 60 seconds
-            if (ok := FT(&X, &Y, 243, 116, 381, 180, 0, 0, MatchMakingText)) {
+            /* if (ok := FT(&X, &Y, 243, 116, 381, 180, 0, 0, MatchMakingText)) {
                 AddToLog("Matchmaking succesfull.")
                 return true
-            }
+            } */
+           if (!CheckForLobby()) {
+                AddToLog("Player is no longer detecting the lobby, matchmaking successful.")
+                return true
+           }
             Sleep(200)  ; Check every 200ms
         }
         AddToLog("Matchmaking timeout, restarting mode")
         FixClick(400, 520)
         return StartSelectedMode()
     }
+}
+
+HasMatchmaking(ModeName) {
+    ; Portal and Infinity Castle do not use matchmaking
+    if (ModeName = "Infinity Castle")
+        return false
+
+    if (ModeName = "Portal" && !PortalLobby.Value)
+        return false
+
+    return true
 }

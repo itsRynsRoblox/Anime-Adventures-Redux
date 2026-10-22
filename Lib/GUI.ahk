@@ -6,11 +6,11 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.0"
+global version := "v0.1.1"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
-global repoName := "Anime Adventures Redux"
+global repoName := "Anime-Adventures-Redux"
 ;Coordinate and Positioning Variables
 global WM_SIZING := 0x0214
 global WM_SIZE := 0x0005
@@ -931,45 +931,71 @@ getElapsedTime() {
 sizeDown() {
     global rblxID, targetWidth, targetHeight
 
-    if !WinExist(rblxID) {
-        return
+    hwnd := WinExist(rblxID)
+    if (!hwnd) {
+        AddToLog("❌ Roblox window not found (rblxID: " rblxID ")")
+        return false
+    }
+    id := "ahk_id " hwnd
+
+    ; A maximized (or minimized) window can't be reliably moved, so restore it first
+    if (WinGetMinMax(id) != 0) {
+        WinRestore(id)
+        Sleep(200)
     }
 
-    WinActivate(rblxID)
-    WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
+    WinActivate(id)
+    if !WinWaitActive(id, , 2)
+        AddToLog("⚠️ Couldn't focus Roblox (is it running as admin?)")
 
-    if (OutWidth == targetWidth && OutHeight == targetHeight) {
-        return
-    }
+    WinGetPos(&X, &Y, &W, &H, id)
+    if SizeMatches(W, H)
+        return true
 
-    ; Check if in fullscreen
-    isFullscreen := (OutWidth >= A_ScreenWidth && OutHeight >= A_ScreenHeight)
-    if (isFullscreen) {
+    ; Leave real fullscreen, waiting for the transition instead of a fixed sleep
+    if IsFullscreenWin(hwnd) {
         Send "{F11}"
-        Sleep(300)
-
-        ; Recheck size
-        WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
-        if (OutWidth >= A_ScreenWidth && OutHeight >= A_ScreenHeight) {
-            return
+        loop 15 {
+            Sleep(200)
+            if !IsFullscreenWin(hwnd)
+                break
         }
+        if IsFullscreenWin(hwnd) {
+            AddToLog("❌ Roblox is still fullscreen, can't resize")
+            return false
+        }
+        Sleep(200)
     }
 
-    loop 3 {
-        if (debugMessages) {
-            AddToLog("Attempt " A_Index ": current size: " OutWidth "x" OutHeight)
-        }
-        WinMove(X, Y, targetWidth, targetHeight, rblxID)
-        Sleep(150)
+    loop 5 {
+        WinGetPos(&X, &Y, &W, &H, id)
+        WinMove(X, Y, targetWidth, targetHeight, id)
+        Sleep(200)
+        WinGetPos(&X, &Y, &W, &H, id)
+        if SizeMatches(W, H)
+            return true
+    }
 
-        WinGetPos(&X, &Y, &OutWidth, &OutHeight, rblxID)
-        if (OutWidth == targetWidth && OutHeight == targetHeight) {
-            return
-        }
+    AddToLog("❌ Resize failed. Wanted " targetWidth "x" targetHeight ", got " W "x" H)
+    return false
+}
+
+; Within a couple of pixels counts as a match
+SizeMatches(w, h, tol := 2) {
+    global targetWidth, targetHeight
+    return Abs(w - targetWidth) <= tol && Abs(h - targetHeight) <= tol
+}
+
+; True only if the window covers the whole monitor it's on (not just the primary one)
+IsFullscreenWin(hwnd) {
+    WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+    cx := x + w // 2, cy := y + h // 2
+    loop MonitorGetCount() {
+        MonitorGet(A_Index, &L, &T, &R, &B)
+        if (cx >= L && cx < R && cy >= T && cy < B)
+            return (w >= R - L && h >= B - T)
     }
-    if (debugMessages) {
-        AddToLog("Failed to resize after 3 attempts. Final size: " OutWidth "x" OutHeight)
-    }
+    return false
 }
 
 moveRobloxWindow() {
