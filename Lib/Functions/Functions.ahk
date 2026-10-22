@@ -924,7 +924,7 @@ ClickReplay() {
 }
 
 ClickNextLevel() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, NextText, 0, -40)
+    ClickUntilGone(0, 0, 80, 85, 739, 224, NextLevel, 0, -40)
 }
 
 ClickReturnToLobby() {

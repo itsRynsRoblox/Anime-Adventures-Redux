@@ -257,6 +257,10 @@ GetPlacementSpeed() {
 PostPlacementChecks() {
     HandleStartButton()
 
+    if (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") {
+        CheckForFoolBuffs()
+    }
+
     if (CheckForLobby()) {
         AddToLog("Found in lobby, restarting mode if possible")
         return CheckLobby()
