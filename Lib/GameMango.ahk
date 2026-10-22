@@ -7,6 +7,7 @@ LoadKeybindSettings()  ; Load saved keybinds
 CheckForUpdates()
 StartRapidOcr()
 UpdatePlacementListView()
+CheckFirstRun()
 Hotkey(F1Key, (*) => moveRobloxWindow())
 Hotkey(F2Key, (*) => StartMacro())
 Hotkey(F3Key, (*) => Reload())
@@ -74,10 +75,10 @@ CheckForXP(closeLeaderboard := false, shouldClick := true) {
     return false
 }
 
-ChallengeMode() {    
+ChallengeMode() {
     AddToLog("Moving to Challenge mode")
     ChallengeMovement()
-    
+
     while !(ok := FindText(&X, &Y, 325, 520, 489, 587, 0, 0, Story)) {
         ChallengeMovement()
     }
@@ -91,21 +92,25 @@ CustomMode() {
 }
 
 HandleEndScreen(isVictory := true) {
+    ; Challenge mode exits to the lobby. Do not continue into the normal
+    ; end-screen handlers after the lobby transition.
     if (inChallengeMode) {
         ClickReturnToLobby()
         CheckLobby()
+        return
     }
-    Switch ModeDropdown.Text {
-        Case "Story":
+
+    switch ModeDropdown.Text {
+        case "Story":
             HandleStoryEnd()
-        Case "Portal":
+        case "Portal":
             HandlePortalEnd()
         case "Custom":
             HandleCustomEnd()
         case "Contracts":
             HandleContractEnd()
         Default:
-            HandleDefaultEnd()
+            HandleDefaultEnd(isVictory)
     }
 }
 
@@ -134,13 +139,18 @@ HandleCustomEnd() {
     }
 }
 
-HandleDefaultEnd() {
+HandleDefaultEnd(isVictory) {
     mode := ModeDropdown.Text = "Event" ? EventDropdown.Text : ModeDropdown.Text
 
     ; Infinity Castle advances to the next level instead of replaying
     if (mode = "Infinity Castle") {
-        AddToLog("[Game Over] Infinity Castle, advancing to next level")
-        ClickNextLevel()
+        if (isVictory) {
+            AddToLog("[Game Over] Infinity Castle, advancing to next room")
+            ClickNextLevel()
+        } else {
+            AddToLog("[Game Over] Replaying stage")
+            ClickReplay()
+        }
         return RestartStage()
     }
 
@@ -222,10 +232,11 @@ MonitorStage() {
 
     outcome := result ? "Victory" : "Defeat"
     AddToLog(outcome " - Stage Length: " stageLength)
-
-    if (ok := FT(&X, &Y, 260, 400, 390, 450, 0, 0, NextText)) {
+    if !WaitAndCheck(3000, NextText, 260, 400, 390, 450) {
         ClickUntilGone(0, 0, 260, 400, 390, 450, NextText, 0, -40)
         Sleep(1500)
+    } else {
+        FixClick(321, 387)
     }
 
     if (WebhookEnabled.Value) {
@@ -239,7 +250,6 @@ MonitorStage() {
     }
 
     HandleEndScreen(result)
-    Reconnect()
 }
 
 ChallengeMovement() {
@@ -314,10 +324,10 @@ Zoom() {
         Click
         MouseMove(400, 400)  ; Move mouse down to angle camera down
     }
-    
+
     ; Zoom back out smoothly
     Scroll(Integer(ZoomBox.Value), "WheelDown", 50)
-    
+
     ; Move mouse back to center
     MouseMove(400, 300)
 }
@@ -397,7 +407,7 @@ BasicSetup(usedButton := false) {
 
     CloseLeaderboard(false)
     Sleep 250
-    
+
     if (!StartWalk(usedButton)) {
         HandleMapMovement(currentMap)
     }
@@ -1893,7 +1903,7 @@ MoveForSacredPlanet() {
         SendInput ("{w up}")
     }
 }
-    
+
 RestartStage() {
     global currentMap
     if (TeleportFailsafe.Value) {
@@ -1909,7 +1919,8 @@ RestartStage() {
         TimerManager.Resume("Teleport Failsafe")
     }
 
-    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
+    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() :
+        DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
 
     ; Wait for loading
     CheckLoaded()
@@ -1924,13 +1935,14 @@ RestartStage() {
     } else {
         StartPlacingUnits(PlacementPatternDropdown.Text == "Custom" || PlacementPatternDropdown.Text = "Map Specific")
     }
-    
+
     ; Monitor stage progress
     MonitorStage()
 }
 
 Reconnect(force := false) {
-    if (FindText(&X, &Y, 202, 206, 601, 256, 0.10, 0.10, Disconnect) || force || TeleportFailsafe.Value && TimerManager.HasExpired("Teleport Failsafe")) {
+    if (FindText(&X, &Y, 202, 206, 601, 256, 0.10, 0.10, Disconnect) || force || TeleportFailsafe.Value && TimerManager
+    .HasExpired("Teleport Failsafe")) {
         if (WinExist(rblxID)) {
             if (!WinActive(rblxID)) {
                 WinActivate(rblxID)
@@ -1985,8 +1997,10 @@ Reconnect(force := false) {
         }
         Sleep(1000)
         AddToLog("Reconnected Successfully!")
-        return StartSelectedMode()
+        return true
     }
+
+    return false
 }
 
 wiggle() {
@@ -1996,15 +2010,18 @@ wiggle() {
 }
 
 CheckLobby() {
+    ; This function only waits for the lobby. It must not start another mode
+    ; from inside the previous run's call stack, or repeated runs can overlap.
     loop {
-        Sleep 1000
+        Sleep(1000)
+
         if (CheckForLobby()) {
-            break
+            AddToLog("Returned to lobby")
+            return true
         }
+
         Reconnect()
     }
-    AddToLog("Returned to lobby, restarting selected mode")
-    return StartSelectedMode()
 }
 
 CheckForLobby() {
@@ -2014,8 +2031,10 @@ CheckForLobby() {
 CheckLoaded() {
     loop {
         Sleep(500)
-        
-        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart) or (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStartLaptop) or (ok := FT(&X, &Y, 0, 0, 742, 287, 832, 377, 0.10, 0.10, Units) or (ok := FT(&X, &Y, 0, 0, 1080, 1080, 0, 0, UnitManager) or PixelGetColor(320, 60) = 0x00EE00)))) {
+
+        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart) or (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0,
+            VoteStartLaptop) or (ok := FT(&X, &Y, 0, 0, 742, 287, 832, 377, 0.10, 0.10, Units) or (ok := FT(&X, &Y, 0,
+                0, 1080, 1080, 0, 0, UnitManager) or PixelGetColor(320, 60) = 0x00EE00)))) {
             AddToLog("Successfully Loaded In")
             if (TeleportFailsafe.Value) {
                 TimerManager.Clear("Teleport Failsafe")
@@ -2052,9 +2071,9 @@ StartSelectedMode() {
         case "Event":
             StartEvent()
         case "Infinity Castle":
-            StartInfinityCastle()    
+            StartInfinityCastle()
         case "Contracts":
-            StartContracts()    
+            StartContracts()
     }
 }
 
@@ -2062,10 +2081,10 @@ FormatStageTime(ms) {
     seconds := Floor(ms / 1000)
     minutes := Floor(seconds / 60)
     hours := Floor(minutes / 60)
-    
+
     minutes := Mod(minutes, 60)
     seconds := Mod(seconds, 60)
-    
+
     return Format("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
@@ -2082,7 +2101,8 @@ ValidateMode() {
 }
 
 GetNavKeys() {
-    return StrSplit(FileExist("Settings\UINavigation.txt") ? FileRead("Settings\UINavigation.txt", "UTF-8") : "\,#,}", ",")
+    return StrSplit(FileExist("Settings\UINavigation.txt") ? FileRead("Settings\UINavigation.txt", "UTF-8") : "\,#,}",
+    ",")
 }
 
 SetupForInfinite() {
@@ -2119,7 +2139,7 @@ ZoomIn() {
     Sleep 100
 
     ; Zoom in smoothly
-    Loop 12 {
+    loop 12 {
         Send "{WheelUp}"
         Sleep 50
     }
@@ -2137,7 +2157,7 @@ ZoomIn() {
 
 ZoomOut() {
     ; Zoom out smoothly
-    Loop 10 {
+    loop 10 {
         Send "{WheelDown}"
         Sleep 50
     }
@@ -2180,7 +2200,8 @@ CheckForStartButton() {
 HandleStartButton() {
     loop {
         Sleep(1000)
-        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart) or (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStartLaptop))) {
+        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart) or (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0,
+            VoteStartLaptop))) {
             FixClick(350, 103) ; click yes
             FixClick(350, 100)
             FixClick(350, 97)
@@ -2194,7 +2215,7 @@ HandleStartButton() {
 StartsInLobby(ModeName) {
     ; Array of modes that usually start in lobby
     static modes := ["Story", "Raid", "Challenge", "Infinity Castle", "Portal", "Legend Stages", "Event"]
-    
+
     ; Special case: If PortalLobby.Value is set, don't start in lobby for "Portal"
     if (ModeName = "Portal" && !PortalLobby.Value)
         return false

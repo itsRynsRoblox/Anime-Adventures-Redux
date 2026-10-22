@@ -186,58 +186,63 @@ WebhookLog() {
 }
 
 WebhookScreenshot(title, description, color := 0x0dffff, status := "") {
-    global webhook, WebhookURL, wins, loss, currentStreak, stageStartTime
+    global webhook, WebhookURL, wins, loss, currentStreak, stageStartTime, rblxID, MainUI
 
     if (!IsSet(stageStartTime)) {
         stageStartTime := A_TickCount
     }
-    
+
     if !(webhookURL ~= 'i)https?:\/\/discord\.com\/api\/webhooks\/(\d{18,19})\/[\w-]{68}') {
         return
     }
-    
-    ; Select appropriate message based on conditions
+
     footerText := GameTitle . version
 
-    ; Check if it's a long run (30+ minutes)
     stageLength := CalculateElapsedTime(stageStartTime)
     stageMinutes := Floor((A_TickCount - stageStartTime) / (1000 * 60))
 
-    ; Helper function to replace placeholders
-    ReplaceVars(text, vars) {
-        for key, value in vars {
-            text := StrReplace(text, "#{" key "}", value)
-        }
-        return text
-    }
-
     UserIDSent := ""
 
-    ; Initialize GDI+
+    ; --- Roblox client area ---
+    if !WinExist(rblxID) || (WinGetMinMax(rblxID) = -1) {
+        return
+    }
+    WinGetClientPos(&rX, &rY, &rW, &rH, rblxID)
+    if (rW <= 0 || rH <= 0) {
+        return
+    }
+
+    ; Start with Roblox's rectangle
+    left := rX, top := rY, right := rX + rW, bottom := rY + rH
+
+    ; --- Expand to include the overlay window ---
+    if (IsSet(MainUI) && IsObject(MainUI) && WinExist("ahk_id " MainUI.Hwnd)) {
+        WinGetPos(&oX, &oY, &oW, &oH, "ahk_id " MainUI.Hwnd)
+        if (oW > 0 && oH > 0) {
+            left := Min(left, oX)
+            top := Min(top, oY)
+            right := Max(right, oX + oW)
+            bottom := Max(bottom, oY + oH)
+        }
+    }
+
+    capW := right - left
+    capH := bottom - top
+
     pToken := Gdip_Startup()
     if !pToken {
         MsgBox("Failed to initialize GDI+")
         return
     }
 
-    ; Capture and process screen
-    pBitmap := Gdip_BitmapFromScreen()
+    pBitmap := Gdip_BitmapFromScreen(left . "|" . top . "|" . capW . "|" . capH)
     if !pBitmap {
         MsgBox("Failed to capture the screen")
         Gdip_Shutdown(pToken)
         return
     }
 
-    pCroppedBitmap := CropImage(pBitmap, 0, 0, 1366, 700)
-    if !pCroppedBitmap {
-        MsgBox("Failed to crop the bitmap")
-        Gdip_DisposeImage(pBitmap)
-        Gdip_Shutdown(pToken)
-        return
-    }   
-    
-    ; Prepare and send webhook
-    attachment := AttachmentBuilder(pCroppedBitmap)
+    attachment := AttachmentBuilder(pBitmap)
     myEmbed := EmbedBuilder()
     myEmbed.setTitle(title)
     myEmbed.setDescription(description)
@@ -251,9 +256,7 @@ WebhookScreenshot(title, description, color := 0x0dffff, status := "") {
         files: [attachment]
     })
 
-    ; Cleanup
     Gdip_DisposeImage(pBitmap)
-    Gdip_DisposeImage(pCroppedBitmap)
     Gdip_Shutdown(pToken)
 }
 

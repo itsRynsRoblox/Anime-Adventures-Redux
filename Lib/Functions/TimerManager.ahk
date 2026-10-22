@@ -10,10 +10,14 @@ class TimerManager {
         ; Store remaining time instead of an expiry while paused
         if (this.paused) {
             this.pausedTimers[name] := durationMs
-            this.timers.Delete(name)
+
+            if (this.timers.Has(name))
+                this.timers.Delete(name)
         } else {
             this.timers[name] := A_TickCount + durationMs
-            this.pausedTimers.Delete(name)
+
+            if (this.pausedTimers.Has(name))
+                this.pausedTimers.Delete(name)
         }
 
         if (debugMessages) {

@@ -40,30 +40,31 @@ ClickStartStory() {
 
 StoryMovement() {
     FixClick(85, 295)
-    if !WaitAndCheck(1000)
+
+    if !WaitAndCheck(1000, ModeCancel, 325, 520, 489, 587) {
         return false
+    }
 
     SendInput("{w down}")
-    if !WaitAndCheck(300) {
+    if !WaitAndCheck(300, ModeCancel, 325, 520, 489, 587) {
         StopMovement()
         return false
     }
     SendInput("{w up}")
 
-    if !WaitAndCheck(300) {
+    if !WaitAndCheck(300, ModeCancel, 325, 520, 489, 587) {
         StopMovement()
         return false
     }
 
     SendInput("{d down}{w down}")
-    if !WaitAndCheck(4500) {
+    if !WaitAndCheck(4500, ModeCancel, 325, 520, 489, 587) {
         StopMovement()
-        Sleep(250)
         return false
     }
     SendInput("{d up}{w up}")
 
-    if !WaitAndCheck(500) {
+    if !WaitAndCheck(500, ModeCancel, 325, 520, 489, 587) {
         StopMovement()
         return false
     }

@@ -6,7 +6,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.3"
+global version := "v0.1.4"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -230,6 +230,8 @@ OpenGuide(*) {
     GuideGUI.MarginX := 24
     GuideGUI.MarginY := 20
     GuideGUI.SetFont("s10", "Segoe UI")
+
+    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", GuideGUI.Hwnd, "int", 20, "int*", 1, "int", 4)
 
     ; ── Header ──────────────────────────────────────────
     GuideGUI.SetFont("s16 bold", "Segoe UI")

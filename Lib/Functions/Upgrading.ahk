@@ -143,9 +143,7 @@ UnitManagerUpgrade(slot) {
         ClickUnit(slot)
         Sleep(500)
     }
-    Loop 3 {
-        SendInput("R")
-    }
+    SendInput("R")
 }
 
 UnitManagerUpgradeWithLimit(coord, index, upgradeLimit) {
@@ -463,10 +461,7 @@ CheckForElyssiaSummon() {
 
 UpgradeUnit(x, y) {
     FixClick(x, y)
-    Loop 3 {
-        SendInput("{R}")
-        Sleep(50)
-    }
+    SendInput("{R}")
 }
 
 TestUpgrade(index) {

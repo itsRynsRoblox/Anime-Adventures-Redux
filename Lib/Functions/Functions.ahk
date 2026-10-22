@@ -397,7 +397,10 @@ CloseLobbyPopups() {
     Sleep(500)
     FixClick(400, 340)
     FixClick(400, 390)
-
+    if (CheckForNotification()) {
+        ClickUntilGone(0, 0, 748, 94, 778, 551, ExitNotification, -3, -30)
+        Sleep (1000)
+    }
 }
 
 ClickUnit(slot) {
@@ -617,7 +620,7 @@ GetPrivateServerCode(link) {
 }
 
 isInLobby() {
-    return FindText(&X, &Y, 7, 590, 37, 618, 0, 0, LobbySettings)
+    return CheckForLobby()
 }
 
 UpdateActiveConfiguration(*) {
@@ -868,13 +871,18 @@ DetectMapImageSearch() { ;Imagesearch version
     }
 }
 
-WaitAndCheck(ms) {
+WaitAndCheck(ms, findText, x1 := 0, y1 := 0, x2 := A_ScreenWidth, y2 := A_ScreenHeight) {
+    global X, Y
+
     start := A_TickCount
+
     while (A_TickCount - start < ms) {
-        if (ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel))
+        if (FT(&X, &Y, x1, y1, x2, y2, 0, 0, findText))
             return false
+
         Sleep(50)
     }
+
     return true
 }
 
@@ -893,7 +901,8 @@ CheckAllGameOptions(&report := "") {
 
     ; Each option now uses its own FT definition
     options := [{ name: "Replay", ft: Replay }, { name: "Next Level", ft: NextLevel },      ; change if your variable is named differently
-    { name: "Return to Lobby", ft: ReturnToLobby }]
+    { name: "Return to Lobby", ft: ReturnToLobby },
+    { name: "Retry", ft: Retry }]
 
     for opt in options {
         if (FT(&X, &Y, 80, 85, 739, 224, 0, 0, opt.ft)) {
@@ -914,22 +923,41 @@ ClickUntilGone(x, y, searchX1, searchY1, searchX2, searchY2, textToFind, offsetX
     while (ok := FT(&X, &Y, searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind) || textToFind2 && FT(&X, &Y,
         searchX1, searchY1, searchX2, searchY2, 0, 0, textToFind2)) {
         if (offsetX != 0 || offsetY != 0) {
-            FixClick(X + offsetX, Y + offsetY)
+            FixClick(X + offsetX, Y + offsetY, "Right")
         } else {
-            FixClick(x, y)
+            FixClick(x, y, "Right")
         }
         Sleep(1000)
     }
 }
 
 ClickReplay() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, -40)
+    if (!WaitAndCheck(1500, Replay, 80, 85, 739, 224) || !WaitAndCheck(1500, Retry, 80, 85, 739, 224)) {
+        return ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, -40) || ClickUntilGone(0, 0, 80, 85, 739, 224, Retry, 0, -40)
+    }
 }
 
 ClickNextLevel() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, NextLevel, 0, -40)
+    if (!WaitAndCheck(1500, NextLevel, 80, 85, 739, 224)) {
+        return ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, -40)
+    }
 }
 
 ClickReturnToLobby() {
-    ClickUntilGone(0, 0, 80, 85, 739, 224, ReturnToLobby, 0, -40)
+    if (!WaitAndCheck(1500, ReturnToLobby, 80, 85, 739, 224)) {
+        return ClickUntilGone(0, 0, 80, 85, 739, 224, ReturnToLobby, 0, -40)
+    }
+}
+
+CheckFirstRun() {
+    firstRunFile := A_ScriptDir "\Settings\first_run.dat"
+
+    if FileExist(firstRunFile)
+        return
+
+    OpenGuide()
+    AddToLog("First time running detected, opening the setup guide.")
+
+    ; Create the marker file so the guide won't open again.
+    FileAppend("complete", firstRunFile)
 }
