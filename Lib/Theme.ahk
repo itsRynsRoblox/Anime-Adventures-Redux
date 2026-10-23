@@ -74,6 +74,10 @@ global ThemePresets := Map(
 global ThemeCurrent  := Map()     ; what the GUI is showing right now
 global ThemeSaved    := Map()     ; what is stored in Theme.ini
 global ThemeBindings := []        ; { ctrl, role, kind, last }
+global ThemeProfileDir := A_ScriptDir "\Settings\ThemeProfiles"   ; one .ini per user profile
+global ThemeProfiles := Map()     ; name -> full theme Map (colours + TitleFont)
+global ThemeActiveProfile := ""   ; user profile currently being used / edited ("" = none)
+global ThemeDeleteBtn := ""
 global ThemeUI       := ""        ; editor window
 global ThemeEdits    := Map()
 global ThemeSwatches := Map()
@@ -98,6 +102,7 @@ Theme_Init() {
     }
     ThemeSaved := ThemeCurrent.Clone()
     Theme_SyncLegacy()
+    Theme_LoadProfiles()
 }
 
 Theme_Get(key) {
@@ -146,12 +151,14 @@ Theme_ReadFile(path) {
     return result.Count ? result : ""
 }
 
-Theme_WriteFile(path, theme) {
+Theme_WriteFile(path, theme, name := "") {
     global ThemeOrder
     try {
         SplitPath(path, , &dir)
         if (dir != "" && !DirExist(dir))
             DirCreate(dir)
+        if (name != "")
+            IniWrite(name, path, "Theme", "Name")
         for key in ThemeOrder
             IniWrite(theme[key], path, "Theme", key)
         IniWrite(theme["TitleFont"], path, "Theme", "TitleFont")
@@ -180,6 +187,132 @@ Theme_IsDirty() {
             return true
     }
     return (ThemeCurrent["TitleFont"] != ThemeSaved["TitleFont"])
+}
+
+
+; =============================================================================
+;  User profiles (Settings\ThemeProfiles\<name>.ini)
+; =============================================================================
+
+Theme_ProfilePath(name) {
+    global ThemeProfileDir
+    return ThemeProfileDir "\" RegExReplace(name, "[\\/:*?`"<>|]", "_") ".ini"
+}
+
+Theme_CleanName(name) {
+    return SubStr(Trim(RegExReplace(name, "[\\/:*?`"<>|`r`n`t]", "")), 1, 40)
+}
+
+Theme_ReadName(path) {
+    return Theme_CleanName(IniRead(path, "Theme", "Name", ""))
+}
+
+Theme_IsPresetName(name) {
+    global ThemePresetNames
+    for preset in ThemePresetNames {
+        if (preset = name)
+            return true
+    }
+    return false
+}
+
+; Built-in presets first, then the user's profiles.
+Theme_AllNames() {
+    global ThemePresetNames, ThemeProfiles
+    names := ThemePresetNames.Clone()
+    for name in ThemeProfiles
+        names.Push(name)
+    return names
+}
+
+; A name that doesn't clash with a preset or an existing profile ("Foo", "Foo (2)", ...)
+Theme_UniqueName(name) {
+    global ThemeProfiles
+    base := name, n := 2
+    while (Theme_IsPresetName(name) || ThemeProfiles.Has(name)) {
+        name := base " (" n ")"
+        n += 1
+    }
+    return name
+}
+
+Theme_LoadProfiles() {
+    global ThemeProfiles, ThemeProfileDir, ThemeDefaults
+    ThemeProfiles := Map()
+    if !DirExist(ThemeProfileDir)
+        return
+    loop files ThemeProfileDir "\*.ini" {
+        colors := Theme_ReadFile(A_LoopFileFullPath)
+        if !IsObject(colors)
+            continue
+        name := Theme_ReadName(A_LoopFileFullPath)
+        if (name = "")
+            name := Theme_CleanName(RegExReplace(A_LoopFileName, "i)\.ini$"))
+        if (name = "" || Theme_IsPresetName(name))
+            continue
+        profile := ThemeDefaults.Clone()
+        for key, value in colors
+            profile[key] := value
+        ThemeProfiles[name] := profile
+    }
+}
+
+; Write the current theme to a profile (creates or overwrites it).
+Theme_StoreProfile(name) {
+    global ThemeProfiles, ThemeCurrent, ThemeDefaults
+    profile := ThemeDefaults.Clone()
+    for key, value in ThemeCurrent
+        profile[key] := value
+    ThemeProfiles[name] := profile
+    if !Theme_WriteFile(Theme_ProfilePath(name), profile, name)
+        MsgBox("Couldn't write the profile file:`n" Theme_ProfilePath(name), "UI Theme", "Icon!")
+}
+
+Theme_RebuildPresetList() {
+    global ThemePresetDDL, ThemeSuspend
+    ThemeSuspend := true
+    ThemePresetDDL.Delete()
+    ThemePresetDDL.Add(Theme_AllNames())
+    ThemeSuspend := false
+}
+
+; Ask for a name and save the current theme as a profile. Returns true if one was saved.
+Theme_SaveAs() {
+    global ThemeUI, ThemeProfiles, ThemeActiveProfile
+
+    ThemeUI.Opt("+OwnDialogs")
+    suggestion := (ThemeActiveProfile != "") ? ThemeActiveProfile : Theme_UniqueName("My Theme")
+    box := InputBox("Name for this theme profile:", "Save Theme Profile", "w300 h130", suggestion)
+    if (box.Result != "OK")
+        return false
+
+    name := Theme_CleanName(box.Value)
+    if (name = "")
+        return false
+    if Theme_IsPresetName(name) {
+        MsgBox("That name belongs to a built-in preset. Please choose another.", "Save Theme Profile", "Icon!")
+        return false
+    }
+    if (ThemeProfiles.Has(name) && name != ThemeActiveProfile) {
+        if (MsgBox("A profile named '" name "' already exists. Overwrite it?", "Save Theme Profile", "YesNo Icon?") != "Yes")
+            return false
+    }
+
+    Theme_StoreProfile(name)
+    ThemeActiveProfile := name
+    Theme_RebuildPresetList()
+    Theme_RefreshEditor()
+    return true
+}
+
+; Save button logic: update the active profile, or offer to name a brand-new custom theme.
+Theme_SaveAll() {
+    global ThemeActiveProfile
+    if (ThemeActiveProfile != "")
+        Theme_StoreProfile(ThemeActiveProfile)
+    else if (Theme_MatchPreset() = 0)
+        Theme_SaveAs()                  ; cancelling just skips creating a profile
+    return Theme_Save()
 }
 
 
@@ -348,7 +481,8 @@ Theme_Redraw() {
 
 Theme_OpenEditor(*) {
     global MainUI, ThemeUI, ThemeOrder, ThemeLabels, ThemeCurrent, ThemeEdits, ThemeSwatches
-    global ThemeStatus, ThemePresetDDL, ThemeFontDDL, ThemePresetNames, ThemeFonts
+    global ThemeStatus, ThemePresetDDL, ThemeFontDDL, ThemeDeleteBtn
+    global ThemeFonts
 
     if IsObject(ThemeUI) {                 ; already open -> bring it forward
         try {
@@ -377,8 +511,10 @@ Theme_OpenEditor(*) {
     ; ---- Presets / import / export ----
     ThemeUI.SetFont("s10 Norm c" E.text, "Segoe UI")
     ThemeUI.Add("Text", "x16 y80 w52 h24 +0x200", "Preset")
-    ThemePresetDDL := ThemeUI.Add("DropDownList", "x70 y78 w150 r8 cBlack", ThemePresetNames)
+    ThemePresetDDL := ThemeUI.Add("DropDownList", "x70 y78 w118 r10 cBlack", Theme_AllNames())
     ThemePresetDDL.OnEvent("Change", Theme_OnPreset)
+    ThemeDeleteBtn := ThemeUI.Add("Button", "x192 y77 w30 h26", "X")
+    ThemeDeleteBtn.OnEvent("Click", Theme_OnDelete)
     ThemeUI.Add("Button", "x228 y77 w88 h26", "Import...").OnEvent("Click", Theme_OnImport)
     ThemeUI.Add("Button", "x322 y77 w92 h26", "Export...").OnEvent("Click", Theme_OnExport)
 
@@ -415,10 +551,11 @@ Theme_OpenEditor(*) {
     ; ---- Bottom buttons ----
     ThemeUI.Add("Text", "x16 y" y " w398 h1 +Background" E.line)
     y += 14
-    ThemeUI.Add("Button", "x16 y" y " w92 h30 Default", "Save").OnEvent("Click", (*) => Theme_Save())
-    ThemeUI.Add("Button", "x118 y" y " w92 h30", "Revert").OnEvent("Click", Theme_OnRevert)
-    ThemeUI.Add("Button", "x220 y" y " w92 h30", "Reset All").OnEvent("Click", Theme_OnResetAll)
-    ThemeUI.Add("Button", "x322 y" y " w92 h30", "Close").OnEvent("Click", Theme_OnClose)
+    ThemeUI.Add("Button", "x16 y" y " w72 h30 Default", "Save").OnEvent("Click", (*) => Theme_SaveAll())
+    ThemeUI.Add("Button", "x97 y" y " w72 h30", "Save As").OnEvent("Click", Theme_OnSaveAs)
+    ThemeUI.Add("Button", "x178 y" y " w72 h30", "Revert").OnEvent("Click", Theme_OnRevert)
+    ThemeUI.Add("Button", "x259 y" y " w72 h30", "Reset All").OnEvent("Click", Theme_OnResetAll)
+    ThemeUI.Add("Button", "x340 y" y " w72 h30", "Close").OnEvent("Click", Theme_OnClose)
     y += 46
 
     ThemeUI.OnEvent("Close", Theme_OnClose)
@@ -441,6 +578,7 @@ Theme_OpenEditor(*) {
 ; skipKey = the hex box the user is typing in (don't rewrite it under their cursor).
 Theme_RefreshEditor(skipKey := "") {
     global ThemeUI, ThemeCurrent, ThemeEdits, ThemeSwatches, ThemeFontDDL, ThemePresetDDL, ThemeSuspend
+    global ThemeActiveProfile, ThemeDeleteBtn
 
     if !IsObject(ThemeUI)
         return
@@ -455,21 +593,30 @@ Theme_RefreshEditor(skipKey := "") {
         }
     }
     try ThemeFontDDL.Choose(ThemeCurrent["TitleFont"])
-    try ThemePresetDDL.Value := Theme_MatchPreset()     ; 0 = custom (no preset selected)
+    try ThemePresetDDL.Value := Theme_MatchPreset()     ; 0 = custom (nothing selected)
+    try ThemeDeleteBtn.Enabled := (ThemeActiveProfile != "")
     ThemeSuspend := false
 
     Theme_UpdateStatus()
 }
 
 ; Index of the preset that exactly matches the current colours, or 0.
+; Index (in Theme_AllNames) of the preset / profile that matches the current colours, or 0.
 Theme_MatchPreset() {
-    global ThemePresets, ThemePresetNames, ThemeCurrent, ThemeOrder
+    global ThemePresets, ThemeProfiles, ThemeCurrent, ThemeOrder, ThemeActiveProfile
 
-    for i, name in ThemePresetNames {
-        preset := ThemePresets[name]
+    names := Theme_AllNames()
+    if (ThemeActiveProfile != "") {        ; while editing a profile, keep it selected
+        for i, name in names {
+            if (name = ThemeActiveProfile)
+                return i
+        }
+    }
+    for i, name in names {
+        source := ThemePresets.Has(name) ? ThemePresets[name] : ThemeProfiles[name]
         same := true
         for key in ThemeOrder {
-            if (preset[key] != ThemeCurrent[key]) {
+            if (source[key] != ThemeCurrent[key]) {
                 same := false
                 break
             }
@@ -609,17 +756,24 @@ Theme_OnResetFont(*) {
 }
 
 Theme_OnPreset(ctrl, *) {
-    global ThemeSuspend, ThemeCurrent, ThemePresets, ThemeOrder
+    global ThemeSuspend, ThemeCurrent, ThemePresets, ThemeProfiles, ThemeOrder, ThemeActiveProfile
 
     if ThemeSuspend
         return
     name := ctrl.Text
-    if !ThemePresets.Has(name)
-        return
 
-    preset := ThemePresets[name]
-    for key in ThemeOrder
-        ThemeCurrent[key] := preset[key]     ; presets change colours only - the title font is left alone
+    if ThemePresets.Has(name) {
+        preset := ThemePresets[name]
+        for key in ThemeOrder
+            ThemeCurrent[key] := preset[key]       ; built-in presets change colours only
+        ThemeActiveProfile := ""
+    } else if ThemeProfiles.Has(name) {
+        for key, value in ThemeProfiles[name]
+            ThemeCurrent[key] := value             ; user profiles include the title font
+        ThemeActiveProfile := name
+    } else {
+        return
+    }
     Theme_Changed()
 }
 
@@ -631,7 +785,7 @@ Theme_OnRevert(*) {
 }
 
 Theme_OnResetAll(*) {
-    global ThemeUI, ThemeCurrent, ThemeDefaults
+    global ThemeUI, ThemeCurrent, ThemeDefaults, ThemeActiveProfile
 
     ThemeUI.Opt("+OwnDialogs")
     answer := MsgBox("Reset every colour and the title font to the default theme?`n`n"
@@ -641,38 +795,97 @@ Theme_OnResetAll(*) {
 
     for key, value in ThemeDefaults
         ThemeCurrent[key] := value
+    ThemeActiveProfile := ""
     Theme_Changed()
 }
 
 Theme_OnExport(*) {
-    global ThemeUI, ThemeCurrent
+    global ThemeUI, ThemeCurrent, ThemeActiveProfile
 
     ThemeUI.Opt("+OwnDialogs")
-    path := FileSelect("S16", A_ScriptDir "\Settings\MyTheme.ini", "Export Theme", "Theme (*.ini)")
+    suggestion := (ThemeActiveProfile != "") ? ThemeActiveProfile : "MyTheme"
+    path := FileSelect("S16", A_ScriptDir "\Settings\" Theme_CleanName(suggestion) ".ini", "Export Theme", "Theme (*.ini)")
     if (path = "")
         return
     if !RegExMatch(path, "i)\.ini$")
         path .= ".ini"
-    if !Theme_WriteFile(path, ThemeCurrent)
+
+    ; The profile name travels inside the file so it shows up under the same name when imported.
+    SplitPath(path, , , , &stem)
+    name := (ThemeActiveProfile != "") ? ThemeActiveProfile : Theme_CleanName(stem)
+    if !Theme_WriteFile(path, ThemeCurrent, name)
         MsgBox("Couldn't write that file.", "Export Theme", "Icon!")
 }
 
 Theme_OnImport(*) {
-    global ThemeUI, ThemeCurrent
+    global ThemeUI, ThemeCurrent, ThemeProfiles, ThemeDefaults, ThemeOrder, ThemeActiveProfile
 
     ThemeUI.Opt("+OwnDialogs")
     path := FileSelect(3, A_ScriptDir "\Settings", "Import Theme", "Theme (*.ini)")
     if (path = "")
         return
 
-    imported := Theme_ReadFile(path)
-    if !IsObject(imported) {
+    colors := Theme_ReadFile(path)
+    if !IsObject(colors) {
         MsgBox("That file doesn't contain a valid theme.", "Import Theme", "Icon!")
         return
     }
+    imported := ThemeDefaults.Clone()
+    for key, value in colors
+        imported[key] := value
+
+    ; Use the name stored in the file (falls back to the file name)
+    name := Theme_ReadName(path)
+    if (name = "") {
+        SplitPath(path, , , , &stem)
+        name := Theme_CleanName(stem)
+    }
+    if (name = "")
+        name := "Imported Theme"
+
+    ; Same name + identical colours = it's already there, just select it. Otherwise never overwrite.
+    existing := ThemeProfiles.Has(name) ? ThemeProfiles[name] : ""
+    same := IsObject(existing)
+    if same {
+        for key in ThemeOrder {
+            if (existing[key] != imported[key]) {
+                same := false
+                break
+            }
+        }
+        if (existing["TitleFont"] != imported["TitleFont"])
+            same := false
+    }
+    if !same
+        name := Theme_UniqueName(name)
+
     for key, value in imported
         ThemeCurrent[key] := value
+    Theme_StoreProfile(name)
+    ThemeActiveProfile := name
+    Theme_RebuildPresetList()
     Theme_Changed()
+}
+
+Theme_OnSaveAs(*) {
+    if Theme_SaveAs()
+        Theme_Save()
+}
+
+Theme_OnDelete(*) {
+    global ThemeUI, ThemeProfiles, ThemeActiveProfile
+
+    if (ThemeActiveProfile = "")
+        return
+    ThemeUI.Opt("+OwnDialogs")
+    if (MsgBox("Delete the profile '" ThemeActiveProfile "'?`n`nYour current colours stay as they are.", "Delete Profile", "YesNo Icon?") != "Yes")
+        return
+
+    try FileDelete(Theme_ProfilePath(ThemeActiveProfile))
+    ThemeProfiles.Delete(ThemeActiveProfile)
+    ThemeActiveProfile := ""
+    Theme_RebuildPresetList()
+    Theme_RefreshEditor()
 }
 
 ; Close button / window X / Escape.  Returning true stops AutoHotkey's default close handling.
@@ -686,7 +899,7 @@ Theme_OnClose(*) {
         if (answer = "Cancel")
             return true
         if (answer = "Yes") {
-            if !Theme_Save()
+            if !Theme_SaveAll()
                 return true
         } else {
             for key, value in ThemeSaved

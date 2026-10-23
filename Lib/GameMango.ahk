@@ -158,7 +158,7 @@ HandleDefaultEnd(isVictory) {
         AddToLog("[Game Over] Matchmaking enabled, returning to lobby to matchmake")
         ClickReturnToLobby()
         CheckLobby()
-        return
+        return StartSelectedMode()
     }
 
     if (!ReturnLobbyBox.Value) {

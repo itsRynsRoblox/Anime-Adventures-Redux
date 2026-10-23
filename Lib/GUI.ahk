@@ -7,7 +7,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.5"
+global version := "v0.1.6"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -462,6 +462,8 @@ OpenDebugMenu(*) {
         "Check for results screen", "Looks for the game-over / results screen.",
         "Check for game over options", "Looks for the replay / return to lobby options.",
         "Check all on-screen cards", "Scans the card selection screen for all cards.",
+        "Check story map coordinates", "Ensure that the story maps interface is open and scrolled to the top.",
+        "Check legend stage map coordinates", "Ensure that the legend stage maps interface is open and scrolled to the top.",
         "Check raid map coordinates", "Ensure that the raid maps interface is open and scrolled to the top.",
         "Test screen resolution / DPI", "Reports your resolution and DPI scaling for troubleshooting.",
     )
