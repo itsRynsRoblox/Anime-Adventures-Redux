@@ -7,7 +7,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.7"
+global version := "v0.1.8"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -865,8 +865,7 @@ PlacementShowButton.OnEvent("Click", (*) => ShowPlacementDots())
 DiscordButton.OnEvent("Click", (*) => OpenDiscord())
 ;--------------SETTINGS--------------;
 MainUI.SetFont("s10 c" uiTheme[6])
-global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts",
-    "Infinity Castle", "Legend Stages", "Portal", "Custom"])
+global ModeDropdown := MainUI.Add("DropDownList", "x818 y53 w140 h180 Choose0 +Center", ["Story", "Event", "Contracts", "Infinity Castle", "Legend Stages", "Portal", "Raid", "Custom"])
 global EventDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center Hidden", ["Fool's Hunt"])
 global StoryDropdown := MainUI.Add("DropDownList", "x968 y53 w150 h180 Choose0 +Center", ["Planet Greenie",
     "Walled City", "Snowy Town", "Sand Village", "Navy Bay", "Fiend City", "Spirit World", "Ant Kingdom", "Magic Town",
@@ -1133,6 +1132,31 @@ getElapsedTime() {
 
 ;Basically the code to move roblox, below
 
+moveRobloxWindow() {
+    global MainUIHwnd, offsetX, offsetY, rblxID
+
+    hwnd := WinExist(rblxID)
+    if !hwnd {
+        AddToLog("Waiting for Roblox window...")
+        return
+    }
+
+    ; First ensure correct size
+    ok := sizeDown()
+
+    ; Never try to drag a window that is still in real fullscreen
+    if (!ok && IsFullscreenWin(hwnd))
+        return
+
+    ; Then move relative to main UI
+    WinGetPos(&x, &y, &w, &h, MainUIHwnd)
+    WinMove(x + offsetX, y + offsetY, , , "ahk_id " hwnd)
+
+    ; Only grab focus if we don't already have it
+    if !WinActive("ahk_id " hwnd)
+        WinActivate("ahk_id " hwnd)
+}
+
 sizeDown() {
     global rblxID, targetWidth, targetHeight
 
@@ -1149,16 +1173,26 @@ sizeDown() {
         Sleep(200)
     }
 
-    WinActivate(id)
-    if !WinWaitActive(id, , 2)
-        AddToLog("⚠️ Couldn't focus Roblox (is it running as admin?)")
+    ; Never ask for a window bigger than the monitor's work area (small/scaled screens),
+    ; otherwise the size can never match and we'd fail/retry forever
+    GetMonitorWorkArea(hwnd, &L, &T, &R, &B)
+    tw := Min(targetWidth, R - L)
+    th := Min(targetHeight, B - T)
 
+    ; Already windowed and the right size: nothing to do, and no focus stealing
     WinGetPos(&X, &Y, &W, &H, id)
-    if SizeMatches(W, H)
+    if (!IsFullscreenWin(hwnd) && SizeMatches(W, H, tw, th))
         return true
 
-    ; Leave real fullscreen, waiting for the transition instead of a fixed sleep
+    ; Leave real fullscreen. F11 goes to the FOCUSED window, so we must be sure
+    ; Roblox has focus first, otherwise we'd toggle fullscreen on something else
     if IsFullscreenWin(hwnd) {
+        WinActivate(id)
+        if !WinWaitActive(id, , 2) {
+            AddToLog("⚠️ Couldn't focus Roblox (is it running as admin?), not sending F11")
+            return false
+        }
+
         Send "{F11}"
         loop 15 {
             Sleep(200)
@@ -1174,26 +1208,29 @@ sizeDown() {
 
     loop 5 {
         WinGetPos(&X, &Y, &W, &H, id)
-        WinMove(X, Y, targetWidth, targetHeight, id)
+        WinMove(X, Y, tw, th, id)
         Sleep(200)
         WinGetPos(&X, &Y, &W, &H, id)
-        if SizeMatches(W, H)
+        if SizeMatches(W, H, tw, th)
             return true
     }
 
-    AddToLog("❌ Resize failed. Wanted " targetWidth "x" targetHeight ", got " W "x" H)
+    AddToLog("❌ Resize failed. Wanted " tw "x" th ", got " W "x" H
+        . " | admin=" A_IsAdmin " dpi=" A_ScreenDPI
+        . " style=" Format("{:#x}", WinGetStyle(id)))
     return false
 }
 
-; Within a couple of pixels counts as a match
-SizeMatches(w, h, tol := 2) {
-    global targetWidth, targetHeight
-    return Abs(w - targetWidth) <= tol && Abs(h - targetHeight) <= tol
-}
-
-; True only if the window covers the whole monitor it's on (not just the primary one)
+; Real Roblox fullscreen is a borderless window; windowed mode has a title bar.
+; Size alone is not enough (a windowed window can be as big as a small monitor),
+; so check for the caption first, then confirm it covers its monitor.
 IsFullscreenWin(hwnd) {
-    WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+    id := "ahk_id " hwnd
+
+    if (WinGetStyle(id) & 0xC00000)   ; WS_CAPTION -> normal windowed
+        return false
+
+    WinGetPos(&x, &y, &w, &h, id)
     cx := x + w // 2, cy := y + h // 2
     loop MonitorGetCount() {
         MonitorGet(A_Index, &L, &T, &R, &B)
@@ -1203,21 +1240,28 @@ IsFullscreenWin(hwnd) {
     return false
 }
 
-moveRobloxWindow() {
-    global MainUIHwnd, offsetX, offsetY, rblxID
+; Compares against the (possibly clamped) target, with a small tolerance
+SizeMatches(w, h, tw := unset, th := unset) {
+    global targetWidth, targetHeight
+    if !IsSet(tw)
+        tw := targetWidth
+    if !IsSet(th)
+        th := targetHeight
+    return (Abs(w - tw) <= 2 && Abs(h - th) <= 2)
+}
 
-    if !WinExist(rblxID) {
-        AddToLog("Waiting for Roblox window...")
-        return
+; Work area (excludes taskbar) of the monitor the window is mostly on
+GetMonitorWorkArea(hwnd, &L, &T, &R, &B) {
+    WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+    cx := x + w // 2, cy := y + h // 2
+    loop MonitorGetCount() {
+        MonitorGet(A_Index, &mL, &mT, &mR, &mB)
+        if (cx >= mL && cx < mR && cy >= mT && cy < mB) {
+            MonitorGetWorkArea(A_Index, &L, &T, &R, &B)
+            return
+        }
     }
-
-    ; First ensure correct size
-    sizeDown()
-
-    ; Then move relative to main UI
-    WinGetPos(&x, &y, &w, &h, MainUIHwnd)
-    WinMove(x + offsetX, y + offsetY, , , rblxID)
-    WinActivate(rblxID)
+    MonitorGetWorkArea(MonitorGetPrimary(), &L, &T, &R, &B)
 }
 
 forceRobloxSize() {
