@@ -18,10 +18,7 @@ F5:: {
 }
 
 F6:: {
-    CoordMode("Mouse", "Window")
-    ClickAndHoldExit()
-    CoordMode("Mouse", "Client")
-    Sleep(1000)
+
 }
 
 F7:: {
