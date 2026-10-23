@@ -18,7 +18,7 @@ F5:: {
 }
 
 F6:: {
-    HandleEndScreen()
+
 }
 
 F7:: {
@@ -431,19 +431,27 @@ DoesntHaveSeamless(ModeName) {
 }
 
 DetectMap() {
-    if (ModeDropdown.Text = "Raid") {
-        AddToLog("Map selected: " RaidDropdown.Text)
-        return RaidDropdown.Text
-    } else if (ModeDropdown.Text = "Story") {
-        AddToLog("Map selected: " StoryDropdown.Text)
-        return StoryDropdown.Text
-    } else if (ModeDropdown.Text = "Portal") {
-        return PortalDropdown.Text
-    } else if (ModeDropdown.Text = "Event") {
-        return EventDropdown.Text
-    } else {
-        return "no map found"
+    map := ""
+
+    switch ModeDropdown.Text {
+        case "Raid":
+            map := RaidDropdown.Text
+        case "Story":
+            map := StoryDropdown.Text
+        case "Portal":
+            map := PortalDropdown.Text
+            case "Legend Stages":
+            map := LegendDropDown.Text
+        case "Event":
+            map := EventDropdown.Text
     }
+
+    if (map != "")
+        AddToLog("Map selected: " map)
+    else
+        AddToLog("No map selected.")
+
+    return map
 }
 
 HandleMapMovement(MapName) {
@@ -1922,7 +1930,18 @@ RestartStage() {
         TimerManager.Resume("Teleport Failsafe")
     }
 
-    currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") ? DetectHuntMap() : DetectMapImageSearch() ;(ModeDropdown.Text = "Dungeon") ? DetectMapImageSearch() : DetectMap() backup
+    currentMap := ""
+
+    if (CheckNormalLoadingScreens
+        || ModeDropdown.Text = "Event"
+        || ModeDropdown.Text = "Infinity Castle") {
+
+        currentMap := (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt")
+            ? DetectHuntMap()
+            : DetectMapImageSearch()
+    } else {
+        currentMap := DetectMap()
+    }
 
     ; Wait for loading
     CheckLoaded()

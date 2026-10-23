@@ -8,6 +8,9 @@
         "Setup": 0,
         "Use": 0
     },
+    "Debug": {
+        "Enabled": 0
+    },
     "Failsafe_Settings": {
         "Teleport_Failsafe": {
             "Enabled": 0,

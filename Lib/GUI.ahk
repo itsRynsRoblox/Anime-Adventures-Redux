@@ -651,8 +651,7 @@ OpenPrivateServerGuide(*) {
 MainUI.SetFont("s9 Bold c" uiTheme[1])
 
 ActiveConfigurationText := MainUI.Add("Text", "x840 y7 +Center c" uiTheme[1], "Active Configuration: ")
-ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Movement",
-    "Mode", "Placement", "Upgrade", "Recording"])
+ConfigurationDropdown := MainUI.Add("DropDownList", "x990 y4.5 w110 h180 +Center Choose1", ["Unit", "Cards", "Movement", "Mode", "Placement", "Upgrade", "Recording", "Debug"])
 ConfigurationDropdown.OnEvent("Change", UpdateActiveConfiguration)
 
 global guideBtn := MainUI.Add("Button", "x1108 y5 w90 h20", "Guide")
@@ -779,8 +778,7 @@ global PortalLobby := MainUI.Add("CheckBox", "x825 y280 Hidden cffffff", "Starti
 ; === End Unit Config GUI ===
 
 ; === Custom Recording GUI ===
-global RecordBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1],
-    "Custom Recording Configuration")
+global RecordBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Custom Recording Configuration")
 global RecordMapText := MainUI.Add("Text", "x875 y110 Hidden cffffff", "Map:")
 global RecordMapDropdown := MainUI.Add("DropDownList", "x915 y108 w200 h180 Choose1 +Center Hidden", customDropdowns)
 AddRecordingProfileButton := MainUI.Add("Picture", "x1120 y103 w15 h15 Hidden", Add)
@@ -888,6 +886,10 @@ global CustomPlacementClearButton := MainUI.Add("Button", "x1185 y314 w160 h26 H
 CustomPlacementClearButton.OnEvent("Click", (*) => DeleteCustomCoordsForPreset(CustomPlacementMapDropdown.Text))
 global PlacementShowButton := MainUI.Add("Button", "x1185 y344 w160 h26 Hidden", "Show Dots")
 PlacementShowButton.OnEvent("Click", (*) => ShowPlacementDots())
+
+; === Debug ===
+global DebugBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Ryn's Debug Toggles")
+global CheckNormalLoadingScreens := MainUI.Add("Checkbox", "x825 y110 Hidden cffffff", "Enable non-essential loading screen checks")
 
 DiscordButton.OnEvent("Click", (*) => OpenDiscord())
 ;--------------SETTINGS--------------;
@@ -1447,6 +1449,10 @@ InitControlGroups() {
         ImportRecording, ExportRecording, ShouldUseRecording, ShouldUseSetup, ShouldLoopRecording, ShouldHandleGameEnd,
         RecordStartButton, RecordClearButton, RecordTestButton
     ]
+
+    ControlGroups["Debug"] := [
+        DebugBorder, CheckNormalLoadingScreens
+    ]
 }
 
 ShowOnlyControlGroup(groupName) {
@@ -1619,4 +1625,19 @@ StopCoordinateCapture(*) {
     SetTimer(ClearToolTip, -500)
     AddToLog("✅ Coordinate capture stopped.")
     UpdatePlacementListView()
+}
+
+SetClickThrough(enable := true) {
+    static WS_EX_TRANSPARENT := 0x20
+    static GWL_EXSTYLE := -20
+
+    hwnd := MainUI.Hwnd
+    exStyle := WinGetExStyle("ahk_id " hwnd)
+
+    if enable
+        exStyle |= WS_EX_TRANSPARENT
+    else
+        exStyle &= ~WS_EX_TRANSPARENT
+
+    WinSetExStyle(exStyle, "ahk_id " hwnd)
 }

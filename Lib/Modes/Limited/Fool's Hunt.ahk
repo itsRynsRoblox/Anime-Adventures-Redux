@@ -84,19 +84,32 @@ DetectHuntMap() {
 }
 
 ClickAndHoldExit() {
+
     if WinExist(rblxID) {
-        WinMove(-10, 15, 800, 600, rblxID)
         WinActivate(rblxID)
-        Sleep 1000
+    } else {
+        return
     }
-    AddToLog("Freezing client for 2 minutes...")
-    FreezeClientNew()
-    AddToLog("Unfroze client")
-    fixclick(200, 400)
-    Sleep (1000)
-    moveRobloxWindow()
-    sleep 1000
-    moveRobloxWindow()
+
+    AddToLog("Freezing client to bring your own units...")
+
+    ; Make the AHK GUI click-through
+    SetClickThrough(true)
+
+    try {
+        FreezeClient()
+    } finally {
+        SetClickThrough(false)
+    }
+
+    if WinExist(rblxID) {
+        if (!WinActive(rblxID)) {
+            WinActivate(rblxID)
+        }
+    }
+
+    AddToLog("Client should be frozen now, continuing...")
+    Sleep 1000
 }
 
 GetMinimizeBtnPos(hwnd, &x, &y) {
@@ -111,7 +124,7 @@ GetMinimizeBtnPos(hwnd, &x, &y) {
     return true
 }
 
-FreezeClientNew(x := 692, y := 20, holdTime := 110000) {
+FreezeClient(x := 692, y := 20, holdTime := 110000) {
     global rblxID
     hwnd := WinExist(rblxID)
     if !hwnd

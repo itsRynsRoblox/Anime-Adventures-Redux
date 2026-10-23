@@ -62,6 +62,9 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
             Custom_Placements: {
                 Use: AlwaysUseCustomCheck.Value,
             },
+            Debug : {
+                Enabled: CheckNormalLoadingScreens.Value
+            },
             Modes: {
                 Portals: {
 
@@ -225,6 +228,7 @@ LoadUnitSettingsByMode(fromFile := false) {
     ShouldHandleGameEnd.Value := GetValue(data, ["Custom_Recordings", "HandleEnd"], 0)
 
     AlwaysUseCustomCheck.Value := GetValue(data, ["Custom_Placements", "Use"], 0)
+    CheckNormalLoadingScreens.Value := GetValue(data, ["Debug", "Enabled"], 0)
 
     TeamSwap.Value := GetValue(data, ["Contracts", "Enabled"], 0)
     physicalTeam.Value := GetValue(data, ["Contracts", "Physical_Team"], 1)
