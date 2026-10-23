@@ -7,7 +7,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.2.3"
+global version := "v0.2.4"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"

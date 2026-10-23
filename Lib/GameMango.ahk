@@ -18,7 +18,7 @@ F5:: {
 }
 
 F6:: {
-
+    HandleEndScreen()
 }
 
 F7:: {

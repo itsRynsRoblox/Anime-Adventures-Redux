@@ -117,22 +117,25 @@ HandleContractEnd() {
     global inChallengeMode, challengeStartTime
 
     loop {
-        Sleep(3000)
+        Sleep(800)
 
         ; Click to claim any drops/rewards
         FixClick(560, 560)
 
-        if (ok := FT(&X, &Y, 300, 190, 360, 250, 0, 0, UnitExit)) {
-            ClickUntilGone(0, 0, 300, 190, 360, 250, UnitExit, -4, -35)
+        if (isMenuOpen("Unit Placement")) {
+            FixClick(329, 184) ; close upg menu
+            Sleep(500)
         }
 
-        if (ok := FT(&X, &Y, 260, 400, 390, 450, 0, 0, NextText)) {
-            ClickUntilGone(0, 0, 260, 400, 390, 450, NextText, 0, -40)
+        if !WaitAndCheck(3000, NextText, 266, 376, 377, 413) {
+            ClickUntilGone(0, 0, 266, 376, 377, 413, NextText)
+            Sleep(1500)
+        } else {
+            FixClick(321, 387)
         }
 
         ; Check for both lobby texts
-        if (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText) or (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText2
-        ))) {
+        if (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText) or (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText2))) {
             AddToLog("Found Lobby Text - proceeding with contract end options")
             Sleep(2000)  ; Wait for UI to settle
 
@@ -160,17 +163,23 @@ HandleContractEnd() {
             if (ReturnLobbyBox.Value) {
                 AddToLog("Contract complete - returning to lobby")
                 Sleep(1500)
-                ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, 0, -35, LobbyText2)
+                ClickReturnToLobby()
                 CheckLobby()
                 return StartSelectedMode()
             } else {
                 AddToLog("Starting next contract")
                 Sleep(1500)
-                ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyText, +120, -35, LobbyText2)
+                ClickNextContract()
                 return HandleNextContract()
             }
         }
         Reconnect()
+    }
+}
+
+ClickNextContract() {
+    if (!WaitAndCheck(3000, NextContract, 403, 99, 576, 145)) {
+        FixClick(490, 119)
     }
 }
 

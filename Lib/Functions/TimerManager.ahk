@@ -6,18 +6,20 @@ class TimerManager {
     static pausedTimers := Map()
     static paused := false
 
+
     static Start(name, durationMs) {
-        ; Store remaining time instead of an expiry while paused
+        ; Remove any existing instance from either map
+        if (this.timers.Has(name))
+            this.timers.Delete(name)
+
+        if (this.pausedTimers.Has(name))
+            this.pausedTimers.Delete(name)
+
+        ; Store as remaining time if globally paused
         if (this.paused) {
             this.pausedTimers[name] := durationMs
-
-            if (this.timers.Has(name))
-                this.timers.Delete(name)
         } else {
             this.timers[name] := A_TickCount + durationMs
-
-            if (this.pausedTimers.Has(name))
-                this.pausedTimers.Delete(name)
         }
 
         if (debugMessages) {
@@ -30,6 +32,7 @@ class TimerManager {
                 (this.paused ? " (paused)" : " (" durationMs " ms)"))
         }
     }
+
 
     ; Checks if the timer has expired
     static HasExpired(name) {
@@ -109,11 +112,16 @@ class TimerManager {
 
     ; Clears a timer
     static Clear(name) {
-        existed := this.timers.Has(name) || this.pausedTimers.Has(name)
+        existed := false
 
-        if (existed) {
+        if (this.timers.Has(name)) {
             this.timers.Delete(name)
+            existed := true
+        }
+
+        if (this.pausedTimers.Has(name)) {
             this.pausedTimers.Delete(name)
+            existed := true
         }
 
         if (existed && debugMessages)
