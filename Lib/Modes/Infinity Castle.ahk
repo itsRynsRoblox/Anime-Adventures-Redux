@@ -9,7 +9,7 @@ StartInfinityCastle() {
     InfCastleMovement()
 
     ; Start stage
-    while !(ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel)) {
+    while !(ok := FT(&X, &Y, 344, 506, 458, 540, 0, 0, ModeCancel)) {
         Reconnect() ; Added Disconnect Check
         InfCastleMovement()
     }
@@ -23,8 +23,8 @@ StartInfinityCastle() {
     }
 
     ;Start Inf Castle
-    if (ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel)) {
-        ClickUntilGone(0, 0, 325, 520, 489, 587, ModeCancel, -10, -120)
+    if (ok := FT(&X, &Y, 344, 506, 458, 540, 0, 0, ModeCancel)) {
+        ClickUntilGone(0, 0, 344, 506, 458, 540, ModeCancel, -10, -80)
     }
 
     RestartStage()

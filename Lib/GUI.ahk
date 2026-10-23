@@ -7,7 +7,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.1.8"
+global version := "v0.2.0"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -747,6 +747,8 @@ ZoomBox.OnEvent("Change", (*) => ValidateEditBox(ZoomBox))
 global MiscSettingsBorder := MainUI.Add("GroupBox", "x1163 y205 w195 h176 +Center Hidden c" uiTheme[1], "Misc Settings"
 )
 global UpdateChecker := MainUI.Add("Checkbox", "x1175 y230 Hidden cffffff Checked", "Enable update checker")
+global ForceCheckUpdateButton := MainUI.Add("Button", "x1195 y260 h20 Hidden", "Check for updates")
+ForceCheckUpdateButton.OnEvent("Click", (*) => CheckForUpdates())
 
 global ModeBorder := MainUI.Add("GroupBox", "x808 y85 w550 h296 +Center Hidden c" uiTheme[1], "Mode Configuration")
 global ModeConfigurations := MainUI.Add("CheckBox", "x825 y110 Hidden cffffff", "Enable Per-Mode Unit Settings")
@@ -1377,7 +1379,7 @@ InitControlGroups() {
         TeleportFailsafe, TeleportFailsafeTimerText, TeleportFailsafeTimer,
         KeybindBorder, F1Text, F1Box, F2Text, F2Box, F3Text, F3Box, F4Text, F4Box, keybindSaveBtn,
         ZoomSettingsBorder, ZoomText, ZoomBox, ZoomTech, ZoomInOption, ZoomTeleport,
-        MiscSettingsBorder, UpdateChecker
+        MiscSettingsBorder, UpdateChecker, ForceCheckUpdateButton
     ]
 
     ControlGroups["Upgrade"] := [
