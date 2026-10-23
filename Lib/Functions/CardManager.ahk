@@ -134,7 +134,7 @@ HandleCards(modeName := "") {
     config := CardModeConfigs[modeName]
     order := config["options"]
     region := config.Has("region") ? config["region"] : [209, 203, 652, 404]
-    delay := config.Has("pickDelay") ? config["pickDelay"] : 5000
+    delay := config.Has("pickDelay") ? config["pickDelay"] : 6500
     tiers := config.Has("tiers") ? config["tiers"] : cardTierVars
     x1 := region[1], y1 := region[2], x2 := region[3], y2 := region[4]
 
