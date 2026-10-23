@@ -144,10 +144,10 @@ ClickSearchAndTypePortal(selectedPortal) {
 }
 
 CheckForPortal(lobby := false) {
-    x1 := lobby ? 211 : 257
-    y1 := lobby ? 341 : 419
-    x2 := lobby ? 401 : 445
-    y2 := lobby ? 504 : 520
+    x1 := lobby ? 211 : 255
+    y1 := lobby ? 341 : 402
+    x2 := lobby ? 401 : 552
+    y2 := lobby ? 504 : 455
     portalText := lobby ? UsePortal : SelectPortal
     action := lobby ? "starting portal" : "restarting portal"
 
@@ -178,7 +178,8 @@ HandlePortalFallback(lobby := false) {
 
 HandlePortalEnd() {
     global inChallengeMode
-    switch PortalDropdown.text {
+
+    switch PortalDropdown.Text {
         case "Demon Leader's Portal":
             selectedPortal := "De"
         case "Puppet Portal":
@@ -191,43 +192,57 @@ HandlePortalEnd() {
             selectedPortal := "S"
         case "Eclipse Portal":
             selectedPortal := "E"
+        default:
+            AddToLog("Unknown portal selected.")
+            return
     }
 
     loop {
-        Sleep(3000)
-        FixClick(560, 560)
+        ; Check whether the lobby has appeared
+        if (FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText)
+        || FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText2)) {
 
-        HandleTextFind(300, 190, 360, 250, UnitExit, -4, -35)
-        Sleep(1500)
-
-        HandleTextFind(260, 400, 390, 450, NextText, 0, -40)
-        Sleep(1500)
-
-        if (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText) or (ok := FT(&X, &Y, 80, 85, 739, 224, 0, 0, LobbyText2))) {
             if (inChallengeMode) {
                 CompleteChallenge()
                 return
             }
 
-            AddToLog("Found Lobby Text - creating/joining new portal")
+            AddToLog("Found lobby text - creating/joining new portal")
             Sleep(2000)
 
             CreateOrJoinPortal(selectedPortal)
 
             if (PortalRoleDropdown.Text = "Solo") {
-                sleep 1000
-                FixClick(400, 460)  ; Start portal
-                return RestartStage()
+                Sleep(1000)
+                FixClick(400, 460) ; Start portal
             } else if (PortalRoleDropdown.Text = "Creating") {
                 Sleep(5000)
             } else {
                 AddToLog("Waiting for next portal")
                 Sleep(5000)
             }
+
             return RestartStage()
         }
 
+        ; Close Unit Placement UI if open
+        if (isMenuOpen("Unit Placement")) {
+            FixClick(329, 184)
+            Sleep(500)
+        }
+
+        ; Click to progress through the end screen
+        FixClick(560, 560)
+
+        ; Handle the Next button
+        if !WaitAndCheck(3000, NextText, 266, 376, 377, 413) {
+            ClickUntilGone(0, 0, 266, 376, 377, 413, NextText)
+            Sleep(1500)
+        }
+
         Reconnect()
+
+        Sleep(1000)
     }
 }
 
@@ -261,7 +276,7 @@ CreateOrJoinPortal(selectedPortal) {
 }
 
 ClickSelectPortal() {
-    ClickUntilGone(0, 0, 257, 419, 445, 520, SelectPortal)
+    ClickUntilGone(0, 0, 255, 402, 552, 455, SelectPortal)
 }
 
 ClickUsePortal() {

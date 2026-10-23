@@ -635,18 +635,13 @@ UpdateActiveConfiguration(*) {
     ToggleControlGroup(ConfigurationDropdown.Text)
 }
 
-CloseLeaderboard(inLobby := true) {
-    if (inLobby) {
-        if (ok := FindText(&X, &Y, 632, 93, 656, 115, 0.15, 0.15, OpenLeaderboard)) {
-            SendInput("{Tab}")
-        } else {
-            FixClick(641, 72)
-        }
+CloseLeaderboard(clickFailsafe := true) {
+    if (ok := FT(&X, &Y, 480, 62, 651, 84, 0.15, 0.15, OpenLeaderboard)) {
+        SendInput("{Tab}")
     } else {
-        if (ok := FindText(&X, &Y, 482, 97, 499, 111, 0.15, 0.15, OpenLeaderboard)) {
-            SendInput("{Tab}")
-        } else {
+        if (clickFailsafe) {
             FixClick(487, 71)
+            FixClick(641, 72)
         }
     }
 }
