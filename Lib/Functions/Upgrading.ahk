@@ -246,7 +246,8 @@ UpgradeUnitWithLimit(coord, index) {
     y := coord.y
 
     isLimitDisabled := !IsUpgradeLimitEnabled(slot) || unitUpgradeLimitDisabled
-    useUnitManager := UnitManagerUpgradeSystem.Value
+    isManagerDisabled := unitManagerDisabled
+    useUnitManager := !isManagerDisabled && UnitManagerUpgradeSystem.Value
 
     if isLimitDisabled {
         if useUnitManager {
@@ -344,7 +345,7 @@ TestAllUpgradeFindTexts() {
 }
 
 ShouldOpenUnitManager() {
-    if (UnitManagerUpgradeSystem.Value) {
+    if (UnitManagerUpgradeSystem.Value && !unitManagerDisabled) {
         return true
     }
 }
