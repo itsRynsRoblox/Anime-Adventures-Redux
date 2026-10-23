@@ -25,7 +25,7 @@ StartRaidStage() {
     RaidMovement()
 
     ; Start stage
-    while !(ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel)) {
+    while !(ok := FT(&X, &Y, 344, 506, 458, 540, 0, 0, ModeCancel)) {
         RaidMovement()
     }
 
@@ -44,7 +44,7 @@ StartRaid(map, act) {
 }
 
 ClickStartRaid() {
-    ClickUntilGone(0, 0, 320, 468, 486, 521, StartStoryButton, 0, -35)
+    ClickUntilGone(0, 0, 313, 433, 489, 496, StartStoryButton)
 }
 
 GetRaidMap(map) {

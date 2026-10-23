@@ -398,7 +398,7 @@ CloseLobbyPopups() {
     FixClick(400, 340)
     FixClick(400, 390)
     if (CheckForNotification()) {
-        ClickUntilGone(0, 0, 748, 94, 778, 551, ExitNotification, -3, -30)
+        ClickUntilGone(0, 0, 748, 94, 778, 551, ExitNotification, -3)
         Sleep (1000)
     }
 }
@@ -468,8 +468,7 @@ CloseMenu(name := "") {
 
 OpenMenu(name := "") {
     static menuKeys := Map(
-        "Unit Manager", "F",
-        "Ability Manager", "Z"
+        "Unit Manager", "F"
     )
 
     if !name || !menuKeys.Has(name)
@@ -525,7 +524,7 @@ OnPriorityChange(type, priorityNumber, newPriorityNumber) {
 }
 
 CheckForCardSelection() {
-    if (ok := FT(&cardX, &cardY, 293, 152, 450, 213, 0, 0, pick_card)) {
+    if (ok := FT(&cardX, &cardY, 270, 127, 532, 161, 0, 0, pick_card)) {
         HandleCards()
         return true
     }
@@ -933,7 +932,7 @@ ClickUntilGone(x, y, searchX1, searchY1, searchX2, searchY2, textToFind, offsetX
 
 ClickReplay() {
     if (!WaitAndCheck(1500, Replay, 80, 85, 739, 224) || !WaitAndCheck(1500, Retry, 80, 85, 739, 224)) {
-        return ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, -40) || ClickUntilGone(0, 0, 80, 85, 739, 224, Retry, 0, -40)
+        return ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, 0) || ClickUntilGone(0, 0, 80, 85, 739, 224, Retry, 0, 0)
     }
 }
 
@@ -960,4 +959,20 @@ CheckFirstRun() {
 
     ; Create the marker file so the guide won't open again.
     FileAppend("complete", firstRunFile)
+}
+
+HasLoadedIn() {
+    if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart)
+    or FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStartLaptop)
+    or FT(&X, &Y, 0, 0, 742, 287, 832, 377, 0.10, 0.10, Units)
+    or FT(&X, &Y, 0, 0, 1080, 1080, 0, 0, UnitManager)
+    or PixelGetColor(320, 60) = 0x00EE00) {
+        AddToLog("Successfully Loaded In")
+        if (TeleportFailsafe.Value) {
+            TimerManager.Clear("Teleport Failsafe")
+        }
+        return true
+    }
+    Reconnect()
+    return false
 }

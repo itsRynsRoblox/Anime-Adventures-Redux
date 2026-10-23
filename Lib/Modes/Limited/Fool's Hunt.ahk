@@ -5,23 +5,22 @@ DetectHuntMap() {
     startTime := A_TickCount
 
     loop {
-        ; Check if we waited more than 5 minute for votestart
-        if (A_TickCount - startTime > 300000) {
-            if (ok := FT(&X, &Y, 746, 514, 789, 530, 0, 0, AreaText)) {
+        if (A_TickCount - startTime > 60000) {
+            if (CheckForLobby()) {
                 AddToLog("Found in lobby - restarting selected mode")
-                return StartSelectedMode
+                return StartSelectedMode()
             }
             AddToLog("Could not detect map after 5 minutes - proceeding without movement")
             return "no map found"
         }
 
         ; Check for vote screen
-        if (ok := FT(&X, &Y, 326, 60, 547, 173, 0, 0, VoteStart) or (ok := FT(&X, &Y, 340, 537, 468, 557, 0, 0, Yen))) {
-            AddToLog("No Map Found or Movement Unnecessary")
+        if (HasLoadedIn()) {
+            AddToLog("No map found")
             return "no map found"
         }
 
-        loadingScreens := Map(
+        static loadingScreens := Map(
             ; Story Maps
             "Planet Greenie", [PlanetGreenieLoadingScreen],
             "Walled City", [WalledCityLoadingScreen],
@@ -65,7 +64,7 @@ DetectHuntMap() {
         for mapName, patterns in loadingScreens {
             try {
                 for pattern in patterns {  ; Iterate through multiple images for each map
-                    if (ok := ImageSearch(&X, &Y, 3, 4, 796, 593, "*15 " pattern)) {
+                    if (ok := ImageSearch(&X, &Y, 0, 0, A_ScreenWidth, A_ScreenHeight, "*15 " pattern)) {
                         AddToLog("Detected Map: " mapName)
                         return mapName
                     }
@@ -125,6 +124,10 @@ StartFoolsHunt() {
         FindMatch()
     } else {
         PlayHere()
+    }
+
+    while (ok := FT(&X, &Y, 3, 548, 56, 594, 0, 0, LobbySettings)) {
+        Sleep(500)
     }
 
     AddToLog("Starting Fool's Hunt")

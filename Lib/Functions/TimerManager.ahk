@@ -111,8 +111,10 @@ class TimerManager {
     static Clear(name) {
         existed := this.timers.Has(name) || this.pausedTimers.Has(name)
 
-        this.timers.Delete(name)
-        this.pausedTimers.Delete(name)
+        if (existed) {
+            this.timers.Delete(name)
+            this.pausedTimers.Delete(name)
+        }
 
         if (existed && debugMessages)
             AddToLog("[Timer] '" name "' has been cleared")

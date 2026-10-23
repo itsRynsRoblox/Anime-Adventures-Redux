@@ -113,7 +113,14 @@ global customDropdowns := [
     "Dungeon Throne",
     "Mountain Temple",
     "Rain Village",
-    "Shibuya District"
+    "Shibuya District",
+    ; Raids
+    "Sacred Planet",
+    "Strange Town",
+    "Cursed Festival",
+    "Storm Hideout",
+    "Nightmare Train"
+
 ]
 
 ; ========== Constants and Theme Setup ==========

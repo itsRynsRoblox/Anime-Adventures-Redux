@@ -140,9 +140,9 @@ HandleCards(modeName := "") {
 
     AddToLog("Picking card in priority order (" modeName ")")
 
-    if (IsSet(UnitExistence) && FT(&X, &Y, 200, 239, 276, 270, 0, 0, UnitExistence)) {
+    if (isMenuOpen("Unit Placement")) {
         FixClick(329, 184) ; close upg menu
-        Sleep(100)
+        Sleep(500)
     }
     FixClick(59, 572) ; untarget mouse
     Sleep(100)
@@ -166,15 +166,18 @@ HandleCards(modeName := "") {
         }
 
         FTClick(cardX, cardY, 0)
-        MouseMove(0, 10, 2, "R")
+        MouseMove(0, 5, 2, "R")
         Click(2)
         Sleep(1000)
-        MouseMove(0, 120, 2, "R")
+        MouseMove(0, 150, 2, "R")
         Click(2)
 
         msg := "Picked card: " card " (priority " index " of " order.Length ")"
         AddToLog(msg)
-        Sleep(delay)
+        ;Sleep(delay)
+        while (FT(&cardX, &cardY, 270, 127, 532, 161, 0, 0, pick_card)) {
+            Sleep(500)
+        }
         return true
     }
 
@@ -516,7 +519,10 @@ ShowOCRRegions(regions := 0, duration := 5000, winTitle := "ahk_exe RobloxPlayer
            ; [481, 229, 609, 255],
            ; [226, 97, 577, 148],
             ;[80, 85, 739, 224]
-            [741, 501, 792, 594]
+            ;[741, 501, 792, 594]
+            [178, 309, 305, 336],
+            [192, 244, 237, 400],
+            [192, 244, 237, 400]
         ]
     }
 

@@ -11,7 +11,7 @@ StartStoryMode() {
     StoryMovement()
     
     ; Start stage
-    while !(ok := FT(&X, &Y, 325, 520, 489, 587, 0, 0, ModeCancel)) {
+    while !(ok := FT(&X, &Y, 344, 506, 458, 540, 0, 0, ModeCancel)) {
         StoryMovement()
     }
 
@@ -31,40 +31,40 @@ StartStoryMode() {
 }
 
 StartStory(map, act) {
-    return StartContent(map, act, GetStoryMap, GetStoryAct, { x: 190, y: 185 }, { x: 300, y: 240 })
+    return StartContent(map, act, GetStoryMap, GetStoryAct, { x: 695, y: 225 }, { x: 300, y: 240 })
 }
 
 ClickStartStory() {
-    ClickUntilGone(0, 0, 320, 468, 486, 521, StartStoryButton, 0, -35)
+    ClickUntilGone(0, 0, 313, 433, 489, 496, StartStoryButton, 0, 0)
 }
 
 StoryMovement() {
     FixClick(85, 295)
 
-    if !WaitAndCheck(1000, ModeCancel, 325, 520, 489, 587) {
+    if !WaitAndCheck(1000, ModeCancel, 344, 506, 458, 540) {
         return false
     }
 
     SendInput("{w down}")
-    if !WaitAndCheck(300, ModeCancel, 325, 520, 489, 587) {
+    if !WaitAndCheck(300, ModeCancel, 344, 506, 458, 540) {
         StopMovement()
         return false
     }
     SendInput("{w up}")
 
-    if !WaitAndCheck(300, ModeCancel, 325, 520, 489, 587) {
+    if !WaitAndCheck(300, ModeCancel, 344, 506, 458, 540) {
         StopMovement()
         return false
     }
 
     SendInput("{d down}{w down}")
-    if !WaitAndCheck(4500, ModeCancel, 325, 520, 489, 587) {
+    if !WaitAndCheck(4500, ModeCancel, 344, 506, 458, 540) {
         StopMovement()
         return false
     }
     SendInput("{d up}{w up}")
 
-    if !WaitAndCheck(500, ModeCancel, 325, 520, 489, 587) {
+    if !WaitAndCheck(500, ModeCancel, 344, 506, 458, 540) {
         StopMovement()
         return false
     }

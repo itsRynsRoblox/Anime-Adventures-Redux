@@ -261,11 +261,11 @@ CreateOrJoinPortal(selectedPortal) {
 }
 
 ClickSelectPortal() {
-    ClickUntilGone(0, 0, 257, 419, 445, 520, SelectPortal, 0, -35)
+    ClickUntilGone(0, 0, 257, 419, 445, 520, SelectPortal)
 }
 
 ClickUsePortal() {
-    ClickUntilGone(0, 0, 211, 341, 401, 504, UsePortal, 0, -35)
+    ClickUntilGone(0, 0, 211, 341, 401, 504, UsePortal)
 }
 
 HandlePortalReJoin() {

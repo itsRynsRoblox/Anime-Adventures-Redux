@@ -2,6 +2,7 @@
 #SingleInstance Force
 SendMode "Event"
 TraySetIcon("Images\Icon.ico")
+CoordMode "Mouse", "Client"
 
 /*if !A_IsAdmin {
     result := MsgBox(

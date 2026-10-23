@@ -204,8 +204,7 @@ WaitForUpgradeText(timeout := 4500) {
     sleep 100
     startTime := A_TickCount
     while (A_TickCount - startTime < timeout) {
-        if (PixelSearch(&X, &Y, 178, 309, 305, 336, 0x000000, 0) && (PixelSearch(&X, &Y, 192, 244, 237, 400, 0xFFFFFF,
-            0) || PixelSearch(&X, &Y, 192, 244, 237, 400, 0xFFC806, 0))) {
+        if (GetPixel(0x17D6FE, 29, 369, 4, 4, 2)) {
             if (CheckForElyssiaSummon()) {
                 return false
             }

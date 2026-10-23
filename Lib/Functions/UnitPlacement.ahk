@@ -217,10 +217,7 @@ StartPlacingUnits(untilSuccessful := true) {
 }
 
 PlaceUnit(x, y, slot := 1) {
-    if (ModeDropdown.Text = "Winter Event") {
-        CheckForCardSelection()
-    }
-    if (ModeDropdown.Text = "Fool's Hunt") {
+    if (ModeDropdown.Text = "Event" && EventDropdown.Text = "Fool's Hunt") {
         CheckForCardSelection()
     }
 

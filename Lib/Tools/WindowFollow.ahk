@@ -30,14 +30,23 @@ FT_GetOffset(&dx, &dy) {
     }
 }
 
-; Drop-in replacement for FindText(&X, &Y, x1, y1, x2, y2, ...)
+; Screen position of the Roblox client area's top-left corner
+FT_ClientOrigin(&cx, &cy, winTitle := "") {
+    global rblxID
+    cx := 0, cy := 0
+    try WinGetClientPos(&cx, &cy, , , winTitle != "" ? winTitle : rblxID)
+}
+
+; Drop-in replacement for FindText. x1..y2 are CLIENT coordinates
+; (exactly what SetRegion gives you). X/Y are returned in client coordinates too.
 FT(&X := "", &Y := "", x1 := 0, y1 := 0, x2 := 0, y2 := 0, args*) {
-    FT_GetOffset(&dx, &dy)
-    if (x1 = 0 && y1 = 0 && x2 = 0 && y2 = 0)   ; 0,0,0,0 means "whole screen" - leave it
-        dx := 0, dy := 0
-    ok := FindText(&X, &Y, x1 + dx, y1 + dy, x2 + dx, y2 + dy, args*)
+    if (x1 = 0 && y1 = 0 && x2 = 0 && y2 = 0) {   ; whole screen, leave it
+        return FindText(&X, &Y, 0, 0, 0, 0, args*)
+    }
+    FT_ClientOrigin(&cx, &cy)
+    ok := FindText(&X, &Y, x1 + cx, y1 + cy, x2 + cx, y2 + cy, args*)
     if (ok && IsNumber(X) && IsNumber(Y))
-        X -= dx, Y -= dy
+        X -= cx, Y -= cy
     return ok
 }
 

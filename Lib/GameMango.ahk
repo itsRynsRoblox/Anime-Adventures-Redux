@@ -18,7 +18,7 @@ F5:: {
 }
 
 F6:: {
-
+    ShowOCRRegions()
 }
 
 F7:: {
@@ -65,7 +65,7 @@ CheckForXP(closeLeaderboard := false, shouldClick := true) {
         Sleep(1200)
     }
     ; Check for lobby text
-    if (ok := FT(&X, &Y, 575, 145, 641, 210, 0, 0, XpText)) {
+    if (ok := FT(&X, &Y, 534, 126, 758, 158, 0, 0, XpText)) {
         if (shouldClick) {
             FixClick(325, 185)
             FixClick(560, 560)
@@ -117,7 +117,7 @@ HandleEndScreen(isVictory := true) {
 HandleStoryEnd() {
     global lastResult
     if (NextLevelBox.Value && lastResult = "win") {
-        ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyIcon, +260, -35)
+        ClickNextLevel()
     } else {
         ClickReplay()
     }
@@ -129,7 +129,7 @@ HandleCustomEnd() {
     if (NextLevelBox.Value) {
         if (lastResult = "win") {
             AddToLog("[Game Over] Starting next level")
-            ClickUntilGone(0, 0, 80, 85, 739, 224, LobbyIcon, +260, -35)
+            ClickNextLevel()
             return RestartStage()
         }
     } else {
@@ -169,6 +169,7 @@ HandleDefaultEnd(isVictory) {
         AddToLog("[Game Over] Returning to lobby")
         ClickReturnToLobby()
         CheckLobby()
+        return StartSelectedMode()
     }
 }
 
@@ -209,7 +210,6 @@ MonitorStage() {
     }
 
     CloseMenu("Unit Manager")
-    CloseMenu("Ability Manager")
     Sleep(300)
 
     stageEndTime := A_TickCount
@@ -232,8 +232,8 @@ MonitorStage() {
 
     outcome := result ? "Victory" : "Defeat"
     AddToLog(outcome " - Stage Length: " stageLength)
-    if !WaitAndCheck(3000, NextText, 260, 400, 390, 450) {
-        ClickUntilGone(0, 0, 260, 400, 390, 450, NextText, 0, -40)
+    if !WaitAndCheck(3000, NextText, 266, 376, 377, 413) {
+        ClickUntilGone(0, 0, 266, 376, 377, 413, NextText)
         Sleep(1500)
     } else {
         FixClick(321, 387)
@@ -269,7 +269,7 @@ StartContent(mapName, actName, getMapFunc, getActFunc, mapScrollMousePos, actScr
     }
 
     if (CheckForNotification()) {
-        ClickUntilGone(0, 0, 748, 94, 778, 551, ExitNotification, -3, -30)
+        ClickUntilGone(0, 0, 748, 94, 778, 551, ExitNotification, -3)
         Sleep (1000)
     }
 
@@ -344,7 +344,7 @@ TeleportToSpawn() {
     Sleep 300
     if (ok := FT(&X, &Y, 215, 160, 596, 480, 0.20, 0.20, Spawn)) {
         AddToLog("Found Teleport to Spawn button")
-        FixClick(X + 100, Y - 30)
+        FixClick(X + 100, Y)
     } else {
         AddToLog("Could not find Teleport button")
     }
@@ -2031,18 +2031,25 @@ CheckLoaded() {
     loop {
         Sleep(500)
 
-        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart) or (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0,
-            VoteStartLaptop) or (ok := FT(&X, &Y, 0, 0, 742, 287, 832, 377, 0.10, 0.10, Units) or (ok := FT(&X, &Y, 0,
-                0, 1080, 1080, 0, 0, UnitManager) or PixelGetColor(320, 60) = 0x00EE00)))) {
+        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart)
+        or FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStartLaptop)
+        or FT(&X, &Y, 0, 0, 742, 287, 832, 377, 0.10, 0.10, Units)
+        or FT(&X, &Y, 0, 0, 1080, 1080, 0, 0, UnitManager)
+        or PixelGetColor(320, 60) = 0x00EE00) {
+
             AddToLog("Successfully Loaded In")
+
             if (TeleportFailsafe.Value) {
                 TimerManager.Clear("Teleport Failsafe")
             }
-            break
+
+            return true
         }
 
         Reconnect()
     }
+
+    return false
 }
 
 StartedGame() {
@@ -2199,8 +2206,7 @@ CheckForStartButton() {
 HandleStartButton() {
     loop {
         Sleep(1000)
-        if (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0, VoteStart) or (ok := FT(&X, &Y, 301, 64, 503, 154, 0, 0,
-            VoteStartLaptop))) {
+        if (ok := FT(&X, &Y, 352, 36, 450, 62, 0, 0, VoteStart) or (ok := FT(&X, &Y, 352, 36, 450, 62, 0, 0, VoteStartLaptop))) {
             FixClick(350, 103) ; click yes
             FixClick(350, 100)
             FixClick(350, 97)
@@ -2233,14 +2239,11 @@ isMenuOpen(name := "") {
             [700, 142, 789, 166, 0.20, 0.20, "UnitManager"],
             [679, 595, 782, 616, 0.20, 0.20, "UnitManagerDark"]
         ],
-        "Ability Manager", [
-            [675, 594, 785, 616, 0.20, 0.20, "AbilityManager"]
-        ],
         "End Screen", [
             [225, 217, 356, 246, 0.20, 0.20, "Results"]
         ],
-        "Card Selection", [
-            [436, 383, 2, 2, 3, "PixelCheck", 0x4A4747]
+        "Unit Placement", [
+            [29, 369, 4, 4, 2, "PixelCheck", 0x17D6FE]
         ]
     )
 

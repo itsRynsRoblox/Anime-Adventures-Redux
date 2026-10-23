@@ -43,7 +43,7 @@ StartLegend(map, act) {
 }
 
 ClickStartLegend() {
-    ClickUntilGone(0, 0, 320, 468, 486, 521, StartStoryButton, 0, -35)
+    ClickUntilGone(0, 0, 313, 433, 489, 496, StartStoryButton)
 }
 
 GetLegendMap(map) {
