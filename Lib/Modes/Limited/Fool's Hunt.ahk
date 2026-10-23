@@ -61,6 +61,8 @@ DetectHuntMap() {
             "Hellish City", [HellishCityLoadingScreen]
         )
 
+        CloseLeaderboard(false)
+
         for mapName, patterns in loadingScreens {
             try {
                 for pattern in patterns {  ; Iterate through multiple images for each map
@@ -88,7 +90,7 @@ ClickAndHoldExit() {
         Sleep 1000
     }
     AddToLog("Freezing client for 2 minutes...")
-    FreezeClientNew(692, 20) ; Freeze Client for 2 minutes before resuming
+    FreezeClientNew()
     AddToLog("Unfroze client")
     fixclick(200, 400)
     Sleep (1000)
@@ -97,15 +99,41 @@ ClickAndHoldExit() {
     moveRobloxWindow()
 }
 
-FreezeClientNew(x, y, holdTime := 110000) { ;110000
+GetMinimizeBtnPos(hwnd, &x, &y) {
+    rect := Buffer(16)
+    ; DWMWA_CAPTION_BUTTON_BOUNDS = 5 (min+max+close area, window-relative)
+    if DllCall("dwmapi\DwmGetWindowAttribute", "ptr", hwnd, "uint", 5, "ptr", rect, "uint", 16)
+        return false
+    l := NumGet(rect, 0, "int"), t := NumGet(rect, 4, "int")
+    r := NumGet(rect, 8, "int"), b := NumGet(rect, 12, "int")
+    x := Round(l + (r - l) / 6)   ; center of the first of 3 buttons = minimize
+    y := Round((t + b) / 2)
+    return true
+}
+
+FreezeClientNew(x := 692, y := 20, holdTime := 110000) {
+    global rblxID
+    hwnd := WinExist(rblxID)
+    if !hwnd
+        return false
+    WinActivate(hwnd)
+    if !WinWaitActive(hwnd, , 3)
+        return false
+    if GetMinimizeBtnPos(hwnd, &nx, &ny) {
+        x := nx, y := ny
+        ;AddToLog("Freeze: using computed minimize button position (" x "," y ")")
+    } else {
+      ;  AddToLog("Freeze: DWM lookup failed, using fallback position (" x "," y ")")
+    }
     CoordMode("Mouse", "Window")
-    MouseMove(x, y)                     ; move to Roblox minimize button
-    Sleep(50)
-    SendEvent("{RButton down}")         ; hold right click
-    Sleep(holdTime)                     ; 2 minutes = 120000 ms
-    SendEvent("{RButton up}")           ; release
+    MouseMove(x, y)
+    Sleep(150)
+    SendEvent("{RButton down}")
+    Sleep(holdTime)
+    SendEvent("{RButton up}")
     Sleep(50)
     CoordMode("Mouse", "Client")
+    return true
 }
 
 StartFoolsHunt() {

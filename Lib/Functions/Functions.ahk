@@ -12,12 +12,21 @@ global confirmClicked := false
     ExitApp
  }
 
- ;Login Text
- setupOutputFile() {
-     content := "`n==" GameTitle "" version "==`nStart Time: [" currentTime "]`n"
-     FileAppend(content, currentOutputFile)
+ LogToFile(text) {
+     global currentOutputFile
+     SplitPath(currentOutputFile, , &dir)
+     try {
+         if !DirExist(dir)
+             DirCreate(dir)
+         FileAppend(text, currentOutputFile)
+     }
  }
- 
+
+ ;Login Text
+setupOutputFile() {
+    LogToFile("`n==" GameTitle "" version "==`nStart Time: [" currentTime "]`n")
+}
+
 ; Gets the current time in 12-hour format
 getCurrentTime() {
     currentHour := A_Hour
@@ -938,13 +947,13 @@ ClickReplay() {
 
 ClickNextLevel() {
     if (!WaitAndCheck(1500, NextLevel, 80, 85, 739, 224)) {
-        return ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, -40)
+        return ClickUntilGone(0, 0, 80, 85, 739, 224, NextLevel, -5)
     }
 }
 
 ClickReturnToLobby() {
     if (!WaitAndCheck(1500, ReturnToLobby, 80, 85, 739, 224)) {
-        return ClickUntilGone(0, 0, 80, 85, 739, 224, ReturnToLobby, 0, -40)
+        return ClickUntilGone(0, 0, 80, 85, 739, 224, ReturnToLobby)
     }
 }
 

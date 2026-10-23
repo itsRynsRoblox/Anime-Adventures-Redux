@@ -7,7 +7,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.2.0"
+global version := "v0.2.1"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -72,7 +72,6 @@ global ControlGroups := Map()
 ;(Settings > Customize Theme...). Fills uiTheme[] and uiColors. See Lib\Tools\Theme.ahk
 Theme_Init()
 ;Logs/Save settings
-global currentOutputFile := A_ScriptDir "\Logs\LogFile.txt"
 ;Custom Pictures
 GithubImage := "Images\github-logo.png"
 DiscordImage := "Images\another_discord.png"
@@ -80,6 +79,9 @@ DiscordImage := "Images\another_discord.png"
 if !DirExist(A_ScriptDir "\Logs") {
     DirCreate(A_ScriptDir "\Logs")
 }
+
+global currentOutputFile := A_ScriptDir "\Logs\LogFile.txt"
+
 if !DirExist(A_ScriptDir "\Settings") {
     DirCreate(A_ScriptDir "\Settings")
 }
