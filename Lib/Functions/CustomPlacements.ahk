@@ -33,6 +33,10 @@ UseCustomPoints() {
 
     mapName := GetPlacementsForMode(ModeDropdown.Text)
 
+    if (AlwaysUseCustomCheck.Value) {
+        mapName := "Custom"
+    }
+
     if (!savedCoords.Has(mapName) || savedCoords[mapName].Length = 0) {
         return
     }
@@ -258,7 +262,7 @@ UpdatePlacementStatus() {
     global savedCoords, CustomPlacementMapDropdown, PlacementStatusText
     profileName := CustomPlacementMapDropdown.Text
     count := savedCoords.Has(profileName) ? savedCoords[profileName].Length : 0
-    PlacementStatusText.Value := count (count = 1 ? " placement" : " placements") "  |  Double-click a row to edit"
+    PlacementStatusText.Value := count (count = 1 ? " placement" : " placements")
 }
 
 RemoveSelectedPlacement(*) {

@@ -230,7 +230,7 @@ WaitForUpgradeLimitText(upgradeCap, timeout := 4500) {
 
     startTime := A_TickCount
     while (A_TickCount - startTime < timeout) {
-        if (FT(&X, &Y, 150, 200, 350, 450, 0, 0, targetText)) {
+        if (FT(&X, &Y, 161, 194, 318, 225, 0, 0, targetText)) {
             AddToLog("Found Upgrade Cap")
             return true
         }
@@ -441,7 +441,7 @@ SetTotalUnits() {
 MaxUpgrade() {
     Sleep 500
     ; Check for max text
-    if (ok := FT(&X, &Y, 225, 388, 278, 412, 0, 0, MaxText) or (ok := FT(&X, &Y, 255, 234, 299, 250, 0, 0, MaxTextNew))) {
+    if (ok := FT(&X, &Y, 186, 351, 317, 387, 0, 0, MaxText) or (ok := FT(&X, &Y, 161, 194, 318, 225, 0, 0, MaxTextNew))) {
         if (CheckForElyssiaSummon()) {
             return false
         }

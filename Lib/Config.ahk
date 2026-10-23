@@ -59,6 +59,9 @@ SaveSettingsForMode(toExport := false, sendMessage := true) {
                 Loop: ShouldLoopRecording.Value,
                 HandleEnd: ShouldHandleGameEnd.Value
             },
+            Custom_Placements: {
+                Use: AlwaysUseCustomCheck.Value,
+            },
             Modes: {
                 Portals: {
 
@@ -220,6 +223,8 @@ LoadUnitSettingsByMode(fromFile := false) {
     ShouldUseSetup.Value := GetValue(data, ["Custom_Recordings", "Setup"], 0)
     ShouldLoopRecording.Value := GetValue(data, ["Custom_Recordings", "Loop"], 0)
     ShouldHandleGameEnd.Value := GetValue(data, ["Custom_Recordings", "HandleEnd"], 0)
+
+    AlwaysUseCustomCheck.Value := GetValue(data, ["Custom_Placements", "Use"], 0)
 
     TeamSwap.Value := GetValue(data, ["Contracts", "Enabled"], 0)
     physicalTeam.Value := GetValue(data, ["Contracts", "Physical_Team"], 1)

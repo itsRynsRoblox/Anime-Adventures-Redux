@@ -7,7 +7,7 @@
 ; Application Info
 global GameName := "Anime Adventures"
 global GameTitle := "Ryn's " GameName " Macro "
-global version := "v0.2.1"
+global version := "v0.2.2"
 global rblxID := "ahk_exe RobloxPlayerBeta.exe"
 ; Update Checker
 global repoOwner := "itsRynsRoblox"
@@ -341,6 +341,16 @@ OpenGuide(*) {
     GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
         "Fullscreen: Disabled")
 
+
+    y += 30
+    
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans",
+        "Roblox Font: Default")
+
     y += 38
 
     GuideGUI.Add("Text", "x24 y" y " w700 h2 0x10")
@@ -382,17 +392,23 @@ OpenGuide(*) {
 
     ; ── Step 4: Unit Setup ──────────────────────────────
     GuideGUI.SetFont("s12 bold", "Segoe UI")
-    GuideGUI.Add("Text", "x24 y" y " w700 c" gHi,
-        "04  |  Set Up Your Units")
+    GuideGUI.Add("Text", "x24 y" y " w700 c" gHi, "04  |  Configure Discord Settings")
 
     y += 32
 
     GuideGUI.SetFont("s10", "Segoe UI")
     GuideGUI.Add("Text", "x44 y" y " w660 c" gSub,
-        "Set up your unit placements however you prefer. However, avoid using hill-only units if possible, as there is no dedicated hill unit support."
-    )
+        "Please ensure that your Discord settings are configured correctly if you are using these features.")
 
-    y += 62
+    y += 30
+
+    GuideGUI.SetFont("s10 bold", "Segoe UI")
+    GuideGUI.Add("Text", "x62 y" y " w20 c" gHi " BackgroundTrans", "•")
+
+    GuideGUI.SetFont("s10", "Segoe UI")
+    GuideGUI.Add("Text", "x84 y" y " w590 c" gBody " BackgroundTrans", "Disable Voice Overlay")
+
+    y += 38
 
     ; ── Footer ──────────────────────────────────────────
     GuideGUI.Add("Text", "x24 y" y " w700 h2 0x10")
@@ -851,8 +867,8 @@ global PlacementDivider := MainUI.Add("Text", "x809 y138 w549 h2 +0x10 Hidden")
 ; --- List (left) ---
 global PlacementListView := MainUI.Add("ListView", "x820 y150 w350 h195 Hidden -Multi cBlack", ["#", "X", "Y"])
 PlacementListView.OnEvent("DoubleClick", EditSelectedPlacement)
-global PlacementStatusText := MainUI.Add("Text", "x820 y353 w350 h18 Hidden cffffff",
-    "0 placements  |  Double-click a row to edit")
+global PlacementStatusText := MainUI.Add("Text", "x820 y353 w350 h18 Hidden cffffff", "0 placements")
+global AlwaysUseCustomCheck := MainUI.Add("CheckBox", "x1020 y353 h18 Hidden c" uiTheme[1], "Always use custom")
 
 ; --- Actions (right) ---
 global PlacementListHeader := MainUI.Add("Text", "x1185 y148 w160 h16 Hidden cffffff", "View List Options")
@@ -1421,7 +1437,7 @@ InitControlGroups() {
         PlacementSettingsImportButton, PlacementSettingsExportButton,
         CustomPlacementMap, CustomPlacementMapDropdown, AddCustomPlacementProfile, RemoveCustomPlacementProfile,
         fixCameraButton, PlacementDivider,
-        PlacementListView, PlacementStatusText,
+        PlacementListView, PlacementStatusText, AlwaysUseCustomCheck,
         PlacementListHeader, PlacementAddButton, PlacementListEditButton, PlacementListDeleteButton,
         PlacementCaptureHeader, CustomPlacementButton, CustomPlacementClearButton, PlacementShowButton
     ]

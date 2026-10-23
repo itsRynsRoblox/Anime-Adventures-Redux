@@ -940,19 +940,19 @@ ClickUntilGone(x, y, searchX1, searchY1, searchX2, searchY2, textToFind, offsetX
 }
 
 ClickReplay() {
-    if (!WaitAndCheck(1500, Replay, 80, 85, 739, 224) || !WaitAndCheck(1500, Retry, 80, 85, 739, 224)) {
+    if (!WaitAndCheck(2500, Replay, 80, 85, 739, 224) || !WaitAndCheck(2500, Retry, 80, 85, 739, 224)) {
         return ClickUntilGone(0, 0, 80, 85, 739, 224, Replay, 0, 0) || ClickUntilGone(0, 0, 80, 85, 739, 224, Retry, 0, 0)
     }
 }
 
 ClickNextLevel() {
-    if (!WaitAndCheck(1500, NextLevel, 80, 85, 739, 224)) {
+    if (!WaitAndCheck(2500, NextLevel, 80, 85, 739, 224)) {
         return ClickUntilGone(0, 0, 80, 85, 739, 224, NextLevel, -5)
     }
 }
 
 ClickReturnToLobby() {
-    if (!WaitAndCheck(1500, ReturnToLobby, 80, 85, 739, 224)) {
+    if (!WaitAndCheck(2500, ReturnToLobby, 80, 85, 739, 224)) {
         return ClickUntilGone(0, 0, 80, 85, 739, 224, ReturnToLobby)
     }
 }

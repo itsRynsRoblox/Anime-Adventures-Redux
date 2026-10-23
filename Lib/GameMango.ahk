@@ -68,7 +68,10 @@ CheckForXP(closeLeaderboard := false, shouldClick := true) {
     if (ok := FT(&X, &Y, 534, 126, 758, 158, 0, 0, XpText)) {
         if (shouldClick) {
             FixClick(325, 185)
-            FixClick(560, 560)
+            Loop 3 {
+                FixClick(560, 560)
+                Sleep(50)
+            }
         }
         return true
     }
