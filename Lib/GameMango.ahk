@@ -396,7 +396,7 @@ BasicSetup(usedButton := false) {
     CloseChat()
     Sleep 250
 
-    if (ModeDropdown.Text = "Custom" && !usedButton || ModeDropdown.Text == "Portal") {
+    if (ModeDropdown.Text = "Custom" && !usedButton) {
         return
     }
 

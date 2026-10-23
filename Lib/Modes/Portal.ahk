@@ -102,7 +102,7 @@ HandlePortalJoin() {
     if (joinType = "Solo") {
         AddToLog("Soloing " PortalDropdown.text)
         HandlePortalSelection()
-        ;FixClick(400, 460)  ; Start portal
+        FixClick(400, 460)  ; Start portal
     } else if (joinType = "Creating") {
         AddToLog("Creating " PortalDropdown.text)
         HandlePortalSelection()
